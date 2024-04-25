@@ -3,19 +3,13 @@ package com.example.worldradio
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.google.android.exoplayer2.DefaultRenderersFactory
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.SimpleExoPlayer
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource.*
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.util.Util
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var exoPlayer: ExoPlayer
+    private lateinit var player: Player
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,32 +27,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun initializePlayer() {
-        exoPlayer = SimpleExoPlayer.Builder(this)
-            .setMediaSourceFactory(
-                ProgressiveMediaSource.Factory(
-                    buildDataSourceFactory()
-                )
-            )
+        player = ExoPlayer.Builder(this)
             .build()
 
-        val mediaItem = MediaItem.fromUri("http://radio.garden/api/ara/content/listen/I9m2o3ys/channel.mp3")
-        exoPlayer.setMediaItem(mediaItem)
+        val mediaItem = MediaItem.Builder()
+            .setUri("https://deinradio.stream.laut.fm/deinradio")
+            .build()
 
-        exoPlayer.playWhenReady = true
-        exoPlayer.prepare()
+        player.setMediaItem(mediaItem)
+        player.playWhenReady = true
+        player.prepare()
     }
 
     private fun releasePlayer() {
-        exoPlayer.release()
-    }
-
-    private fun buildDataSourceFactory(): DefaultDataSourceFactory {
-        val userAgent = Util.getUserAgent(this, getString(R.string.app_name))
-        return DefaultDataSourceFactory(
-            this,
-            DefaultHttpDataSource.Factory()
-                .setUserAgent(userAgent)
-                .setAllowCrossProtocolRedirects(true) // Allow redirects
-        )
+        player.release()
     }
 }
