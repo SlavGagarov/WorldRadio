@@ -76,7 +76,6 @@ class MainActivity : ComponentActivity() {
 
     private fun initializeMediaSession() {
         mediaSession = MediaSession(this, "MyMediaSession")
-        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
         mediaSession.setCallback(object : MediaSession.Callback() {
             override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
