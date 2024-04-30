@@ -20,6 +20,13 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -29,7 +36,7 @@ class MainActivity : ComponentActivity() {
     private var lastEventTime : Long = 0
 
     private val tag = "WorldRadio"
-    private var radioIds = arrayOf("ajJyClv8", "gM0FbQlC", "I9m2o3ys", "HLMePPFo")
+    private var radioIds = mutableListOf<String>()
     private var radioPosition = 0
 
     private lateinit var mediaSession: MediaSession
@@ -42,11 +49,11 @@ class MainActivity : ComponentActivity() {
 
         setContentView(R.layout.activity_main)
 
+        loadRadioIds()
         initializePlayer()
         initializeMediaSession()
 
         logsTextView = findViewById(R.id.logsTextView)
-        logsTextView.text = ""
     }
 
     override fun onDestroy() {
@@ -129,6 +136,19 @@ class MainActivity : ComponentActivity() {
 
     fun onPreviousRadioButtonClicked(view: View){
         previousRadio()
+    }
+
+    @kotlin.OptIn(DelicateCoroutinesApi::class)
+    private fun loadRadioIds() {
+        GlobalScope.launch(Dispatchers.IO) {
+            val inputStream = assets.open("radio-ids.txt")
+            val reader = BufferedReader(InputStreamReader(inputStream))
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                radioIds.add(line!!)
+            }
+            reader.close()
+        }
     }
 
     private fun nextRadio() {

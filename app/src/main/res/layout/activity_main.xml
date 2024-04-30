@@ -35,7 +35,6 @@
             android:id="@+id/logsTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="TextView"
             android:scrollbars="vertical"/>
     </ScrollView>
 </LinearLayout>
