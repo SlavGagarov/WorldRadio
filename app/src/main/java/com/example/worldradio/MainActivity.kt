@@ -1,6 +1,5 @@
 package com.example.worldradio
 
-import android.content.ContentValues.TAG
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -21,6 +20,7 @@ import android.util.Log
 
 class MainActivity : ComponentActivity() {
 
+    private val tag = "WorldRadio"
     private var radioIds = arrayOf("ajJyClv8", "gM0FbQlC", "I9m2o3ys", "HLMePPFo")
     private var radioPosition = 0
     private lateinit var mediaSession: MediaSession
@@ -110,38 +110,39 @@ class MainActivity : ComponentActivity() {
         mediaSession = MediaSession(this, "MyMediaSession")
         mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
-        // Set callback for MediaSession
         mediaSession.setCallback(object : MediaSession.Callback() {
             override fun onPlay() {
-                Log.d(TAG, "HERE")
+                Log.d(tag, "onPlay triggered")
                 nextRadio()
             }
 
             override fun onPause() {
-                Log.d(TAG, "HERE")
+                Log.d(tag, "onPause triggered")
+                nextRadio()
             }
 
             override fun onSkipToNext() {
-                Log.d(TAG, "HERE")
+                Log.d(tag, "onSkipToNext triggered")
+                nextRadio()
             }
 
             override fun onSkipToPrevious() {
-                Log.d(TAG, "HERE")
+                Log.d(tag, "onSkipToPrevious triggered")
+                nextRadio()
             }
 
             override fun onStop() {
-                Log.d(TAG, "HERE")
+                Log.d(tag, "onStop triggered")
+                nextRadio()
             }
         })
 
-        // Set initial playback state
         val playbackState = PlaybackState.Builder()
             .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE)
             .setState(PlaybackState.STATE_PAUSED, 0, 0f)
             .build()
         mediaSession.setPlaybackState(playbackState)
 
-        // Start the MediaSession
         mediaSession.isActive = true
     }
 }
