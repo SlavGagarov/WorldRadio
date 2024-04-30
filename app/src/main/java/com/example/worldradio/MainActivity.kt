@@ -116,6 +116,9 @@ class MainActivity : ComponentActivity() {
                 if(event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT){
                     nextRadio()
                 }
+                else if(event.keyCode == KeyEvent.KEYCODE_MEDIA_PREVIOUS){
+                    previousRadio()
+                }
             }
         }
     }
@@ -124,11 +127,23 @@ class MainActivity : ComponentActivity() {
         nextRadio()
     }
 
+    fun onPreviousRadioButtonClicked(view: View){
+        previousRadio()
+    }
+
     private fun nextRadio() {
         if(radioPosition == radioIds.size-1)
             radioPosition = 0
         else
             radioPosition ++
+        changeRadio(radioIds[radioPosition])
+    }
+
+    private fun previousRadio() {
+        if(radioPosition == 0)
+            radioPosition = radioIds.size-1
+        else
+            radioPosition --
         changeRadio(radioIds[radioPosition])
     }
 
