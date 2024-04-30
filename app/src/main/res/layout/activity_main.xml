@@ -8,7 +8,6 @@
         android:layout_width="match_parent"
         android:layout_height="129dp"
         android:orientation="horizontal">
-
         <Button
             android:id="@+id/previousRadioButton"
             android:layout_width="0dp"
@@ -24,17 +23,23 @@
             android:layout_weight="1"
             android:onClick="onNextRadioButtonClicked"
             android:text="@string/next_radio" />
-
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/radioNameText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center"
+        android:textSize="36sp" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <TextView
             android:id="@+id/logsTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:scrollbars="vertical"/>
+            android:scrollbars="vertical" />
     </ScrollView>
 </LinearLayout>
