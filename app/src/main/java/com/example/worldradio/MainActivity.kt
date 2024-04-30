@@ -72,8 +72,9 @@ class MainActivity : ComponentActivity() {
 
         val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
 
+        val firstRadioId = radioIds[radioPosition]
         val mediaItem = MediaItem.Builder()
-            .setUri("http://radio.garden/api/ara/content/listen/uPX6WnGn/channel.mp3")
+            .setUri("http://radio.garden/api/ara/content/listen/$firstRadioId/channel.mp3")
             .build()
 
         val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
@@ -187,6 +188,7 @@ class MainActivity : ComponentActivity() {
         (player as ExoPlayer).setMediaSource(mediaSource)
         player.playWhenReady = true
         player.prepare()
-        Toast.makeText(this, "Playing $radioPosition", Toast.LENGTH_SHORT).show()
+        val position = radioPosition+1
+        Toast.makeText(this, "Playing $position", Toast.LENGTH_SHORT).show()
     }
 }
