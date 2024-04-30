@@ -24,9 +24,13 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -43,6 +47,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var player: Player
 
     private lateinit var logsTextView : TextView
+    private lateinit var radioNameText : TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +59,7 @@ class MainActivity : ComponentActivity() {
         initializeMediaSession()
 
         logsTextView = findViewById(R.id.logsTextView)
+        radioNameText = findViewById(R.id.radioNameText)
     }
 
     override fun onDestroy() {
@@ -83,6 +89,7 @@ class MainActivity : ComponentActivity() {
         (player as ExoPlayer).setMediaSource(mediaSource)
         player.playWhenReady = true
         player.prepare()
+        fetchRadioById(firstRadioId)
     }
 
     private fun initializeMediaSession() {
@@ -158,6 +165,7 @@ class MainActivity : ComponentActivity() {
         else
             radioPosition ++
         changeRadio(radioIds[radioPosition])
+        fetchRadioById(radioIds[radioPosition])
     }
 
     private fun previousRadio() {
@@ -166,6 +174,7 @@ class MainActivity : ComponentActivity() {
         else
             radioPosition --
         changeRadio(radioIds[radioPosition])
+        fetchRadioById(radioIds[radioPosition])
     }
 
     @OptIn(UnstableApi::class)
@@ -190,5 +199,40 @@ class MainActivity : ComponentActivity() {
         player.prepare()
         val position = radioPosition+1
         Toast.makeText(this, "Playing $position", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun fetchRadioById(id: String) {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://radio.garden/api/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val service = retrofit.create(RadioService::class.java)
+        val call = service.getRadio(id)
+
+        call.enqueue(object : Callback<RadioResponse> {
+            override fun onResponse(call: Call<RadioResponse>, response: Response<RadioResponse>) {
+                if (response.isSuccessful) {
+                    val radioResponse = response.body()
+                    if (radioResponse != null) {
+                        updateRadioName(radioResponse)
+                    }
+                } else {
+                    Log.e(tag, "Failed to fetch radio")
+                }
+            }
+
+            override fun onFailure(call: Call<RadioResponse>, t: Throwable) {
+                Log.e(tag, "Error fetching radio: ${t.message}")
+            }
+        })
+    }
+
+    fun updateRadioName(radioResponse : RadioResponse){
+        val updateText = radioResponse.data.title + "\n" +
+                    radioResponse.data.country.title + ", " +
+                    radioResponse.data.place.title
+
+        radioNameText.text = updateText
     }
 }
