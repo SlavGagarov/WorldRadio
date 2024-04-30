@@ -31,13 +31,14 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import android.media.MediaMetadata
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class MainActivity : ComponentActivity() {
 
-    private val ignoreInterval : Long = 500
-    private var lastEventTime : Long = 0
+    private val ignoreInterval: Long = 500
+    private var lastEventTime: Long = 0
 
     private val tag = "WorldRadio"
     private var radioIds = mutableListOf<String>()
@@ -46,8 +47,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var mediaSession: MediaSession
     private lateinit var player: Player
 
-    private lateinit var logsTextView : TextView
-    private lateinit var radioNameText : TextView
+    private lateinit var logsTextView: TextView
+    private lateinit var radioNameText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -119,19 +120,19 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private fun handleMediaEvent(mediaButtonIntent : Intent){
+    private fun handleMediaEvent(mediaButtonIntent: Intent) {
         Log.d(tag, "onMediaButtonEvent triggered")
         val intentAction = mediaButtonIntent.action
         logsTextView.append("\n" + intentAction)
 
         if (Intent.ACTION_MEDIA_BUTTON == intentAction) {
-            val event = mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            val event =
+                mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
             if (event != null) {
                 logsTextView.append("\n" + event.keyCode)
-                if(event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT){
+                if (event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT) {
                     nextRadio()
-                }
-                else if(event.keyCode == KeyEvent.KEYCODE_MEDIA_PREVIOUS){
+                } else if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PREVIOUS) {
                     previousRadio()
                 }
             }
@@ -142,7 +143,7 @@ class MainActivity : ComponentActivity() {
         nextRadio()
     }
 
-    fun onPreviousRadioButtonClicked(view: View){
+    fun onPreviousRadioButtonClicked(view: View) {
         previousRadio()
     }
 
@@ -160,25 +161,25 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun nextRadio() {
-        if(radioPosition == radioIds.size-1)
+        if (radioPosition == radioIds.size - 1)
             radioPosition = 0
         else
-            radioPosition ++
+            radioPosition++
         changeRadio(radioIds[radioPosition])
         fetchRadioById(radioIds[radioPosition])
     }
 
     private fun previousRadio() {
-        if(radioPosition == 0)
-            radioPosition = radioIds.size-1
+        if (radioPosition == 0)
+            radioPosition = radioIds.size - 1
         else
-            radioPosition --
+            radioPosition--
         changeRadio(radioIds[radioPosition])
         fetchRadioById(radioIds[radioPosition])
     }
 
     @OptIn(UnstableApi::class)
-    private fun changeRadio(id : String) {
+    private fun changeRadio(id: String) {
         player.stop()
         val audioUrl = "http://radio.garden/api/ara/content/listen/${id}/channel.mp3"
 
@@ -197,7 +198,7 @@ class MainActivity : ComponentActivity() {
         (player as ExoPlayer).setMediaSource(mediaSource)
         player.playWhenReady = true
         player.prepare()
-        val position = radioPosition+1
+        val position = radioPosition + 1
         Toast.makeText(this, "Playing $position", Toast.LENGTH_SHORT).show()
     }
 
@@ -228,11 +229,15 @@ class MainActivity : ComponentActivity() {
         })
     }
 
-    fun updateRadioName(radioResponse : RadioResponse){
-        val updateText = radioResponse.data.title + "\n" +
-                    radioResponse.data.country.title + ", " +
-                    radioResponse.data.place.title
-
+    fun updateRadioName(radioResponse: RadioResponse) {
+        val place = radioResponse.data.country.title + ", " +
+                radioResponse.data.place.title
+        val updateText = radioResponse.data.title + "\n" + place
         radioNameText.text = updateText
+
+        val metadataBuilder = MediaMetadata.Builder()
+        metadataBuilder.putString(MediaMetadata.METADATA_KEY_TITLE, radioResponse.data.title)
+        metadataBuilder.putString(MediaMetadata.METADATA_KEY_ARTIST, place)
+        mediaSession.setMetadata(metadataBuilder.build())
     }
 }
