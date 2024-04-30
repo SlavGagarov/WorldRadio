@@ -1,5 +1,6 @@
 package com.example.worldradio
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -16,6 +17,8 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.util.Log
+import android.view.KeyEvent
+import android.widget.TextView
 
 
 class MainActivity : ComponentActivity() {
@@ -24,6 +27,7 @@ class MainActivity : ComponentActivity() {
     private var radioIds = arrayOf("ajJyClv8", "gM0FbQlC", "I9m2o3ys", "HLMePPFo")
     private var radioPosition = 0
     private lateinit var mediaSession: MediaSession
+    private lateinit var textView : TextView
 
 
     private lateinit var player: Player
@@ -38,6 +42,9 @@ class MainActivity : ComponentActivity() {
 
         initializePlayer()
         initializeMediaSession()
+
+        textView = findViewById(R.id.textView)
+        textView.text = ""
     }
 
     override fun onDestroy() {
@@ -111,29 +118,22 @@ class MainActivity : ComponentActivity() {
         mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
         mediaSession.setCallback(object : MediaSession.Callback() {
-            override fun onPlay() {
-                Log.d(tag, "onPlay triggered")
-                nextRadio()
-            }
+            override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+                Log.d(tag, "onMediaButtonEvent triggered")
+                val intentAction = mediaButtonIntent.action
+                textView.append("\n" + intentAction)
 
-            override fun onPause() {
-                Log.d(tag, "onPause triggered")
-                nextRadio()
-            }
+                if (Intent.ACTION_MEDIA_BUTTON == intentAction) {
+                    val event = mediaButtonIntent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+                    if (event != null) {
+                        textView.append("\n" + event.keyCode)
+                        if(event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT){
+                            nextRadio()
+                        }
+                    }
+                }
 
-            override fun onSkipToNext() {
-                Log.d(tag, "onSkipToNext triggered")
-                nextRadio()
-            }
-
-            override fun onSkipToPrevious() {
-                Log.d(tag, "onSkipToPrevious triggered")
-                nextRadio()
-            }
-
-            override fun onStop() {
-                Log.d(tag, "onStop triggered")
-                nextRadio()
+                return super.onMediaButtonEvent(mediaButtonIntent)
             }
         })
 
