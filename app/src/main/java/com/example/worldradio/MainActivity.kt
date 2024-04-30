@@ -1,11 +1,18 @@
 package com.example.worldradio
 
+import android.content.Intent
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.view.KeyEvent
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -14,27 +21,38 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class MainActivity : ComponentActivity() {
 
+    private val ignoreInterval : Long = 500
+    private var lastEventTime : Long = 0
+
+    private val tag = "WorldRadio"
     private var radioIds = arrayOf("ajJyClv8", "gM0FbQlC", "I9m2o3ys", "HLMePPFo")
     private var radioPosition = 0
 
+    private lateinit var mediaSession: MediaSession
     private lateinit var player: Player
+
+    private lateinit var logsTextView : TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContent {
-            // Use Compose UI if needed
-        }
         setContentView(R.layout.activity_main)
 
         initializePlayer()
+        initializeMediaSession()
+
+        logsTextView = findViewById(R.id.logsTextView)
+        logsTextView.text = ""
     }
 
     override fun onDestroy() {
+        player.release()
+        mediaSession.release()
         super.onDestroy()
-        releasePlayer()
     }
 
     @OptIn(UnstableApi::class)
@@ -59,20 +77,58 @@ class MainActivity : ComponentActivity() {
         player.prepare()
     }
 
-    private fun releasePlayer() {
-        player.release()
+    private fun initializeMediaSession() {
+        mediaSession = MediaSession(this, "MyMediaSession")
+
+        mediaSession.setCallback(object : MediaSession.Callback() {
+            override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastEventTime < ignoreInterval) {
+                    return false
+                }
+                lastEventTime = currentTime
+
+                handleMediaEvent(mediaButtonIntent)
+                return super.onMediaButtonEvent(mediaButtonIntent)
+            }
+        })
+
+        val playbackState = PlaybackState.Builder()
+            .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE)
+            .setState(PlaybackState.STATE_PAUSED, 0, 0f)
+            .build()
+        mediaSession.setPlaybackState(playbackState)
+
+        mediaSession.isActive = true
     }
 
-    fun onStartButtonClicked(view: View) {
+
+    private fun handleMediaEvent(mediaButtonIntent : Intent){
+        Log.d(tag, "onMediaButtonEvent triggered")
+        val intentAction = mediaButtonIntent.action
+        logsTextView.append("\n" + intentAction)
+
+        if (Intent.ACTION_MEDIA_BUTTON == intentAction) {
+            val event = mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            if (event != null) {
+                logsTextView.append("\n" + event.keyCode)
+                if(event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT){
+                    nextRadio()
+                }
+            }
+        }
+    }
+
+    fun onNextRadioButtonClicked(view: View) {
         nextRadio()
-        Toast.makeText(this, "Playing $radioPosition", Toast.LENGTH_SHORT).show()
     }
 
     private fun nextRadio() {
         if(radioPosition == radioIds.size-1)
-            radioPosition = 0;
+            radioPosition = 0
         else
-            radioPosition ++;
+            radioPosition ++
         changeRadio(radioIds[radioPosition])
     }
 
@@ -96,5 +152,6 @@ class MainActivity : ComponentActivity() {
         (player as ExoPlayer).setMediaSource(mediaSource)
         player.playWhenReady = true
         player.prepare()
+        Toast.makeText(this, "Playing $radioPosition", Toast.LENGTH_SHORT).show()
     }
 }
