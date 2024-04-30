@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">World Radio</string>
+    <string name="previous_radio">Previous Radio</string>
+    <string name="next_radio">Next Radio</string>
 </resources>

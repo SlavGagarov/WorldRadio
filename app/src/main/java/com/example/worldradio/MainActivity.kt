@@ -20,6 +20,13 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -29,7 +36,7 @@ class MainActivity : ComponentActivity() {
     private var lastEventTime : Long = 0
 
     private val tag = "WorldRadio"
-    private var radioIds = arrayOf("ajJyClv8", "gM0FbQlC", "I9m2o3ys", "HLMePPFo")
+    private var radioIds = mutableListOf<String>()
     private var radioPosition = 0
 
     private lateinit var mediaSession: MediaSession
@@ -42,11 +49,11 @@ class MainActivity : ComponentActivity() {
 
         setContentView(R.layout.activity_main)
 
+        loadRadioIds()
         initializePlayer()
         initializeMediaSession()
 
         logsTextView = findViewById(R.id.logsTextView)
-        logsTextView.text = ""
     }
 
     override fun onDestroy() {
@@ -65,8 +72,9 @@ class MainActivity : ComponentActivity() {
 
         val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSourceFactory)
 
+        val firstRadioId = radioIds[radioPosition]
         val mediaItem = MediaItem.Builder()
-            .setUri("http://radio.garden/api/ara/content/listen/uPX6WnGn/channel.mp3")
+            .setUri("http://radio.garden/api/ara/content/listen/$firstRadioId/channel.mp3")
             .build()
 
         val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
@@ -116,6 +124,9 @@ class MainActivity : ComponentActivity() {
                 if(event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT){
                     nextRadio()
                 }
+                else if(event.keyCode == KeyEvent.KEYCODE_MEDIA_PREVIOUS){
+                    previousRadio()
+                }
             }
         }
     }
@@ -124,11 +135,36 @@ class MainActivity : ComponentActivity() {
         nextRadio()
     }
 
+    fun onPreviousRadioButtonClicked(view: View){
+        previousRadio()
+    }
+
+    @kotlin.OptIn(DelicateCoroutinesApi::class)
+    private fun loadRadioIds() {
+        GlobalScope.launch(Dispatchers.IO) {
+            val inputStream = assets.open("radio-ids.txt")
+            val reader = BufferedReader(InputStreamReader(inputStream))
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                radioIds.add(line!!)
+            }
+            reader.close()
+        }
+    }
+
     private fun nextRadio() {
         if(radioPosition == radioIds.size-1)
             radioPosition = 0
         else
             radioPosition ++
+        changeRadio(radioIds[radioPosition])
+    }
+
+    private fun previousRadio() {
+        if(radioPosition == 0)
+            radioPosition = radioIds.size-1
+        else
+            radioPosition --
         changeRadio(radioIds[radioPosition])
     }
 
@@ -152,6 +188,7 @@ class MainActivity : ComponentActivity() {
         (player as ExoPlayer).setMediaSource(mediaSource)
         player.playWhenReady = true
         player.prepare()
-        Toast.makeText(this, "Playing $radioPosition", Toast.LENGTH_SHORT).show()
+        val position = radioPosition+1
+        Toast.makeText(this, "Playing $position", Toast.LENGTH_SHORT).show()
     }
 }
