@@ -3,6 +3,7 @@ package com.example.worldradio
 import android.content.Intent
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -11,6 +12,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -20,6 +23,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class MainActivity : ComponentActivity() {
 
     private val ignoreInterval : Long = 500
@@ -100,13 +104,14 @@ class MainActivity : ComponentActivity() {
         mediaSession.isActive = true
     }
 
+
     private fun handleMediaEvent(mediaButtonIntent : Intent){
         Log.d(tag, "onMediaButtonEvent triggered")
         val intentAction = mediaButtonIntent.action
         logsTextView.append("\n" + intentAction)
 
         if (Intent.ACTION_MEDIA_BUTTON == intentAction) {
-            val event = mediaButtonIntent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+            val event = mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
             if (event != null) {
                 logsTextView.append("\n" + event.keyCode)
                 if(event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT){
@@ -122,9 +127,9 @@ class MainActivity : ComponentActivity() {
 
     private fun nextRadio() {
         if(radioPosition == radioIds.size-1)
-            radioPosition = 0;
+            radioPosition = 0
         else
-            radioPosition ++;
+            radioPosition ++
         changeRadio(radioIds[radioPosition])
     }
 
