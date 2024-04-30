@@ -1,5 +1,6 @@
 package com.example.worldradio
 
+import android.content.ContentValues.TAG
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -13,11 +14,17 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
+import android.util.Log
+
 
 class MainActivity : ComponentActivity() {
 
     private var radioIds = arrayOf("ajJyClv8", "gM0FbQlC", "I9m2o3ys", "HLMePPFo")
     private var radioPosition = 0
+    private lateinit var mediaSession: MediaSession
+
 
     private lateinit var player: Player
 
@@ -30,6 +37,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
 
         initializePlayer()
+        initializeMediaSession()
     }
 
     override fun onDestroy() {
@@ -65,7 +73,6 @@ class MainActivity : ComponentActivity() {
 
     fun onStartButtonClicked(view: View) {
         nextRadio()
-        Toast.makeText(this, "Playing $radioPosition", Toast.LENGTH_SHORT).show()
     }
 
     private fun nextRadio() {
@@ -96,5 +103,45 @@ class MainActivity : ComponentActivity() {
         (player as ExoPlayer).setMediaSource(mediaSource)
         player.playWhenReady = true
         player.prepare()
+        Toast.makeText(this, "Playing $radioPosition", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun initializeMediaSession() {
+        mediaSession = MediaSession(this, "MyMediaSession")
+        mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
+
+        // Set callback for MediaSession
+        mediaSession.setCallback(object : MediaSession.Callback() {
+            override fun onPlay() {
+                Log.d(TAG, "HERE")
+                nextRadio()
+            }
+
+            override fun onPause() {
+                Log.d(TAG, "HERE")
+            }
+
+            override fun onSkipToNext() {
+                Log.d(TAG, "HERE")
+            }
+
+            override fun onSkipToPrevious() {
+                Log.d(TAG, "HERE")
+            }
+
+            override fun onStop() {
+                Log.d(TAG, "HERE")
+            }
+        })
+
+        // Set initial playback state
+        val playbackState = PlaybackState.Builder()
+            .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE)
+            .setState(PlaybackState.STATE_PAUSED, 0, 0f)
+            .build()
+        mediaSession.setPlaybackState(playbackState)
+
+        // Start the MediaSession
+        mediaSession.isActive = true
     }
 }
