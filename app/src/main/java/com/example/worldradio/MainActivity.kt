@@ -2,6 +2,8 @@ package com.example.worldradio
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaMetadata
 import android.media.session.MediaSession
@@ -50,6 +52,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var player: Player
     private lateinit var audioManager: AudioManager
     private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
+    private lateinit var focusRequest : AudioFocusRequest
 
 
     private lateinit var logsTextView: TextView
@@ -71,7 +74,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         player.release()
         mediaSession.release()
-        audioManager.abandonAudioFocus(audioFocusChangeListener)
+        audioManager.abandonAudioFocusRequest(focusRequest)
         super.onDestroy()
     }
 
@@ -265,11 +268,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        val result = audioManager.requestAudioFocus(
-            audioFocusChangeListener,
-            AudioManager.STREAM_MUSIC,
-            AudioManager.AUDIOFOCUS_GAIN
-        )
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+
+        focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(audioAttributes)
+            .setOnAudioFocusChangeListener(audioFocusChangeListener)
+            .build()
+
+        val result = audioManager.requestAudioFocus(focusRequest)
 
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             initializePlayer()
@@ -277,6 +286,5 @@ class MainActivity : ComponentActivity() {
         } else {
             Log.e(tag, "Failed to gain audio focus")
         }
-
     }
 }
