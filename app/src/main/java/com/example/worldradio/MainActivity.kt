@@ -217,8 +217,8 @@ class MainActivity : ComponentActivity() {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
-        val service = retrofit.create(RadioService::class.java)
-        val call = service.getRadio(id)
+        val radioApiService = retrofit.create(RadioApiService::class.java)
+        val call = radioApiService.getRadio(id)
 
         call.enqueue(object : Callback<RadioResponse> {
             override fun onResponse(call: Call<RadioResponse>, response: Response<RadioResponse>) {
