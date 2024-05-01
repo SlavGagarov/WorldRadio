@@ -1,6 +1,9 @@
 package com.example.worldradio
 
+import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
+import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
@@ -24,14 +27,13 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import android.media.MediaMetadata
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -46,6 +48,9 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var mediaSession: MediaSession
     private lateinit var player: Player
+    private lateinit var audioManager: AudioManager
+    private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
+
 
     private lateinit var logsTextView: TextView
     private lateinit var radioNameText: TextView
@@ -56,8 +61,8 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
 
         loadRadioIds()
-        initializePlayer()
-        initializeMediaSession()
+
+        getAudioFocus()
 
         logsTextView = findViewById(R.id.logsTextView)
         radioNameText = findViewById(R.id.radioNameText)
@@ -66,6 +71,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         player.release()
         mediaSession.release()
+        audioManager.abandonAudioFocus(audioFocusChangeListener)
         super.onDestroy()
     }
 
@@ -239,5 +245,38 @@ class MainActivity : ComponentActivity() {
         metadataBuilder.putString(MediaMetadata.METADATA_KEY_TITLE, radioResponse.data.title)
         metadataBuilder.putString(MediaMetadata.METADATA_KEY_ARTIST, place)
         mediaSession.setMetadata(metadataBuilder.build())
+    }
+
+    private fun getAudioFocus(){
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+            when (focusChange) {
+                AudioManager.AUDIOFOCUS_LOSS -> {
+                    player.pause()
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    // Pause playback temporarily
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                    // Lower playback volume temporarily
+                }
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    player.play()
+                }
+            }
+        }
+        val result = audioManager.requestAudioFocus(
+            audioFocusChangeListener,
+            AudioManager.STREAM_MUSIC,
+            AudioManager.AUDIOFOCUS_GAIN
+        )
+
+        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            initializePlayer()
+            initializeMediaSession()
+        } else {
+            Log.e(tag, "Failed to gain audio focus")
+        }
+
     }
 }
