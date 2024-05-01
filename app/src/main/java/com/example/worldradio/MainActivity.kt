@@ -55,6 +55,8 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
             unbindService(connection)
             bound = false
         }
+        val serviceIntent = Intent(this, RadioPlayerService::class.java)
+        stopService(serviceIntent)
         super.onDestroy()
     }
 
