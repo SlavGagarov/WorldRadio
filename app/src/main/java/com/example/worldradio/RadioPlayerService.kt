@@ -90,6 +90,7 @@ class RadioPlayerService : Service(){
     }
 
     override fun onDestroy() {
+        player.stop()
         player.release()
         mediaSession.release()
         audioManager.abandonAudioFocusRequest(focusRequest)
