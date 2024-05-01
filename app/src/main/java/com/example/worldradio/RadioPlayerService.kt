@@ -1,6 +1,10 @@
 package com.example.worldradio
 
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -18,6 +22,7 @@ import android.view.KeyEvent
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -51,6 +56,7 @@ class RadioPlayerService : Service(){
     private lateinit var focusRequest : AudioFocusRequest
     private lateinit var context : Context
     private var callback: RadioPlayerCallback? = null
+    private val notificationId = 123
 
     private val binder = LocalBinder()
     inner class LocalBinder : Binder() {
@@ -79,6 +85,7 @@ class RadioPlayerService : Service(){
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(notificationId, createNotification())
         return START_STICKY
     }
 
@@ -289,5 +296,29 @@ class RadioPlayerService : Service(){
             radioPosition--
         changeRadio(radioIds[radioPosition])
         fetchRadioById(radioIds[radioPosition])
+    }
+
+    private fun createNotification(): Notification {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel("channel_id", "Channel Name", NotificationManager.IMPORTANCE_LOW)
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(this, "channel_id")
+            .setContentTitle("Radio Service")
+            .setContentText("Radio is playing...")
+            .setSmallIcon(R.drawable.ic_play)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOnlyAlertOnce(true)
+            .setOngoing(true)
+
+
+        val intent = packageManager.getLaunchIntentForPackage(packageName)
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        builder.setContentIntent(pendingIntent)
+
+        return builder.build()
     }
 }

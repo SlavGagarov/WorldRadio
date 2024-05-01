@@ -46,8 +46,8 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
         radioNameText = findViewById(R.id.radioNameText)
 
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
+        startService(serviceIntent)
         bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
-
     }
 
     override fun onDestroy() {

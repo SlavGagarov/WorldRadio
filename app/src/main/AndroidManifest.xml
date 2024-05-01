@@ -23,7 +23,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.WorldRadio" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,6 +32,8 @@
         </activity>
         <service
             android:name=".RadioPlayerService"
-            android:exported="true" />
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback" />
     </application>
 </manifest>
