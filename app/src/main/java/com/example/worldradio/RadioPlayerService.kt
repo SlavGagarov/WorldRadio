@@ -44,27 +44,31 @@ import java.io.InputStreamReader
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class RadioPlayerService : Service(){
-    private lateinit var player: Player
-    private var radioIds = mutableListOf<String>()
-    private var radioPosition = 0
-    private lateinit var mediaSession: MediaSession
-    private val ignoreInterval: Long = 500
-    private var lastEventTime: Long = 0
     private val tag = "WorldRadio.RadioPlayerService"
+
+    private lateinit var player: Player
+    private lateinit var mediaSession: MediaSession
+
     private lateinit var audioManager: AudioManager
     private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
     private lateinit var focusRequest : AudioFocusRequest
+
+    companion object {
+        var radioIds = mutableListOf<String>()
+    }
+    private var radioPosition = 0
+    private val ignoreInterval: Long = 500
+    private var lastEventTime: Long = 0
+
     private lateinit var context : Context
     private var callback: RadioPlayerCallback? = null
     private val notificationId = 123
-
     private val binder = LocalBinder()
     inner class LocalBinder : Binder() {
         fun getService(): RadioPlayerService = this@RadioPlayerService
     }
 
     interface RadioPlayerCallback {
-        fun onLogReceived(log: String)
         fun onRadioChange(radioName: String)
     }
 
@@ -122,7 +126,6 @@ class RadioPlayerService : Service(){
 
         mediaSession.setCallback(object : MediaSession.Callback() {
             override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
-
                 val currentTime = System.currentTimeMillis()
                 if (currentTime - lastEventTime < ignoreInterval) {
                     return false
@@ -139,7 +142,6 @@ class RadioPlayerService : Service(){
             .setState(PlaybackState.STATE_PAUSED, 0, 0f)
             .build()
         mediaSession.setPlaybackState(playbackState)
-
         mediaSession.isActive = true
     }
 
@@ -147,13 +149,10 @@ class RadioPlayerService : Service(){
     private fun handleMediaEvent(mediaButtonIntent: Intent) {
         Log.d(tag, "onMediaButtonEvent triggered")
         val intentAction = mediaButtonIntent.action
-        callback?.onLogReceived("" + intentAction)
-
         if (Intent.ACTION_MEDIA_BUTTON == intentAction) {
             val event =
                 mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
             if (event != null) {
-                callback?.onLogReceived("" + event.keyCode)
                 if (event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT) {
                     nextRadio()
                 } else if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PREVIOUS) {
@@ -171,21 +170,19 @@ class RadioPlayerService : Service(){
 
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
-
         val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
 
         val mediaItem = MediaItem.Builder()
             .setUri(audioUrl)
             .build()
-
         val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(mediaItem)
 
         (player as ExoPlayer).setMediaSource(mediaSource)
         player.playWhenReady = true
         player.prepare()
-        val position = radioPosition + 1
         fetchRadioById(id)
+        val position = radioPosition + 1
         Toast.makeText(context, "Playing $position", Toast.LENGTH_SHORT).show()
     }
 
@@ -194,7 +191,6 @@ class RadioPlayerService : Service(){
             .baseUrl("http://radio.garden/api/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-
         val radioApiService = retrofit.create(RadioApiService::class.java)
         val call = radioApiService.getRadio(id)
 
@@ -209,7 +205,6 @@ class RadioPlayerService : Service(){
                     Log.e(tag, "Failed to fetch radio")
                 }
             }
-
             override fun onFailure(call: Call<RadioResponse>, t: Throwable) {
                 Log.e(tag, "Error fetching radio: ${t.message}")
             }
@@ -255,7 +250,6 @@ class RadioPlayerService : Service(){
             .setAudioAttributes(audioAttributes)
             .setOnAudioFocusChangeListener(audioFocusChangeListener)
             .build()
-
         val result = audioManager.requestAudioFocus(focusRequest)
 
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
@@ -298,11 +292,9 @@ class RadioPlayerService : Service(){
             .setOnlyAlertOnce(true)
             .setOngoing(true)
 
-
         val intent = packageManager.getLaunchIntentForPackage(packageName)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         builder.setContentIntent(pendingIntent)
-
         return builder.build()
     }
 }

@@ -17,7 +17,6 @@ import androidx.annotation.RequiresApi
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback {
     private val tag = "WorldRadio.MainActivity"
-    private lateinit var logsTextView: TextView
     private lateinit var radioNameText: TextView
 
     private var radioPlayerService: RadioPlayerService? = null
@@ -42,7 +41,6 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
 
         setContentView(R.layout.activity_main)
 
-        logsTextView = findViewById(R.id.logsTextView)
         radioNameText = findViewById(R.id.radioNameText)
 
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
@@ -60,12 +58,6 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
         super.onDestroy()
     }
 
-    override fun onLogReceived(log: String) {
-        runOnUiThread {
-            logsTextView.append("$log\n")
-        }
-    }
-
     override fun onRadioChange(radioName: String) {
         runOnUiThread {
             radioNameText.text = radioName
@@ -80,5 +72,10 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
     fun onPreviousRadioButtonClicked(view: View) {
         Log.d(tag, "Previous Radio Clicked")
         radioPlayerService?.previousRadio()
+    }
+
+    fun onFavoritesClicked(view: View) {
+        Log.d(tag, "Favorites Clicked")
+        startActivity(Intent(this@MainActivity, FavoritesActivity::class.java))
     }
 }
