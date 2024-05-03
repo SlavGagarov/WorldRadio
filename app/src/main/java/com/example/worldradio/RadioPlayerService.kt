@@ -113,24 +113,8 @@ class RadioPlayerService : Service(){
     @OptIn(UnstableApi::class)
     private fun initializePlayer() {
         player = ExoPlayer.Builder(context).build()
-
-        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            .setAllowCrossProtocolRedirects(true)
-
-        val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
-
         val firstRadioId = radioIds[radioPosition]
-        val mediaItem = MediaItem.Builder()
-            .setUri("http://radio.garden/api/ara/content/listen/$firstRadioId/channel.mp3")
-            .build()
-
-        val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(mediaItem)
-
-        (player as ExoPlayer).setMediaSource(mediaSource)
-        player.playWhenReady = true
-        player.prepare()
-        fetchRadioById(firstRadioId)
+        changeRadio(firstRadioId)
     }
 
     private fun initializeMediaSession() {
@@ -201,6 +185,7 @@ class RadioPlayerService : Service(){
         player.playWhenReady = true
         player.prepare()
         val position = radioPosition + 1
+        fetchRadioById(id)
         Toast.makeText(context, "Playing $position", Toast.LENGTH_SHORT).show()
     }
 
@@ -287,7 +272,6 @@ class RadioPlayerService : Service(){
         else
             radioPosition++
         changeRadio(radioIds[radioPosition])
-        fetchRadioById(radioIds[radioPosition])
     }
 
     fun previousRadio() {
@@ -296,7 +280,6 @@ class RadioPlayerService : Service(){
         else
             radioPosition--
         changeRadio(radioIds[radioPosition])
-        fetchRadioById(radioIds[radioPosition])
     }
 
     private fun createNotification(): Notification {
