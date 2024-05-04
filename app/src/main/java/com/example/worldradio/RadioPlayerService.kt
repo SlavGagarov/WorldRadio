@@ -186,7 +186,7 @@ class RadioPlayerService : Service(){
         Toast.makeText(context, "Playing $position", Toast.LENGTH_SHORT).show()
     }
 
-    private fun fetchRadioById(id: String) {
+    public fun fetchRadioById(id: String) {
         val retrofit = Retrofit.Builder()
             .baseUrl("http://radio.garden/api/")
             .addConverterFactory(GsonConverterFactory.create())
