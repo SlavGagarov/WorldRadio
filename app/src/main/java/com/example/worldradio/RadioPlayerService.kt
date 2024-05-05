@@ -93,6 +93,7 @@ class RadioPlayerService : Service(){
                 val isLoadedSuccessfully = loadRadioIds()
                 if (isLoadedSuccessfully) {
                     FavoritesListCache.saveStringList(context, radioIds.value ?: emptyList())
+                    getAudioFocus()
                 } else {
                     Log.e(tag, "Failed to load favorites from cache")
                 }
@@ -100,8 +101,8 @@ class RadioPlayerService : Service(){
         }
         else {
             radioIds.value = loadedRadioIds
+            getAudioFocus()
         }
-        getAudioFocus()
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -139,16 +140,11 @@ class RadioPlayerService : Service(){
     @OptIn(UnstableApi::class)
     private fun initializePlayer() {
         player = ExoPlayer.Builder(context).build()
-        radioIds.observeForever { updatedRadioIds ->
-            if (updatedRadioIds.isNotEmpty()) {
-                radioPosition %= updatedRadioIds.size
-                val firstRadioId = updatedRadioIds[radioPosition]
-                if(firstRadioId != currentRadioId){
-                    changeRadio(firstRadioId)
-                }
-            } else {
-                Log.w(tag, "radioIds list is empty")
-            }
+        if(radioIds.value?.isNotEmpty() == true){
+            changeRadio(radioIds.value!![0])
+        }
+        else {
+            Log.w(tag, "radioIds list is empty")
         }
     }
 
