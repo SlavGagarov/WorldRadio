@@ -114,9 +114,6 @@ class RadioPlayerService : Service(){
     }
 
     override fun onDestroy() {
-        //update favorites for next time app is launched
-        FavoritesListCache.saveStringList(context, radioIds.value ?: emptyList())
-
         player.stop()
         player.release()
         mediaSession.release()
@@ -337,6 +334,7 @@ class RadioPlayerService : Service(){
             if (position in 0 until mutableList.size) {
                 mutableList.removeAt(position)
                 radioIds.postValue(mutableList)
+                FavoritesListCache.saveStringList(context, mutableList)
             }
         }
     }
