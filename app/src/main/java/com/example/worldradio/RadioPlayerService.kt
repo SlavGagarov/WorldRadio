@@ -124,6 +124,7 @@ class RadioPlayerService : Service(){
         player = ExoPlayer.Builder(context).build()
         radioIds.observeForever { updatedRadioIds ->
             if (updatedRadioIds.isNotEmpty()) {
+                radioPosition %= updatedRadioIds.size
                 val firstRadioId = updatedRadioIds[radioPosition]
                 if(firstRadioId != currentRadioId){
                     changeRadio(firstRadioId)
