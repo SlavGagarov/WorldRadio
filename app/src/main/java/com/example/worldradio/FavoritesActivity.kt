@@ -1,5 +1,6 @@
 package com.example.worldradio
 
+import android.app.Application
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -7,8 +8,12 @@ import android.util.Log
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -22,26 +27,67 @@ import java.io.IOException
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@OptIn(DelicateCoroutinesApi::class)
 class FavoritesActivity : ComponentActivity() {
     private val tag = "WorldRadio.FavoritesActivity"
 
     private lateinit var adapter: CustomAdapter
-    private val itemList = mutableListOf<String>()
     private lateinit var recyclerView: RecyclerView
-    private var radioIds = mutableListOf<String>()
+    private val itemList = mutableListOf<String>()
+
+    // LiveData instance for observing changes
+    private var radioIdsLiveData: LiveData<List<String>>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_favorite)
 
-        GlobalScope.launch(Dispatchers.Main) {
-            itemList.addAll(getFavoritesList())
-            recyclerView = findViewById(R.id.recyclerView)
-            recyclerView.layoutManager = LinearLayoutManager(this@FavoritesActivity)
-            adapter = CustomAdapter(itemList)
-            recyclerView.adapter = adapter
+        // Set up the RecyclerView
+        recyclerView = findViewById(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        // Create the adapter and set it to the RecyclerView
+        adapter = CustomAdapter(itemList) { item ->
+            // Remove item from the list when delete button is clicked
+            adapter.notifyDataSetChanged()
+
+            // Call deleteFavorite method of RadioPlayerService to delete the item from the list
+            val radioPlayerService = (applicationContext as MainApplication).getRadioPlayerService()
+            // Assuming you have a deleteFavorite method that accepts the item itself
+
+            val position = itemList.indexOf(item)
+            radioPlayerService?.deleteFavorite(position)
+            itemList.remove(item)
         }
+        recyclerView.adapter = adapter
+
+        // Load itemList only once
+        val radioPlayerService = (applicationContext as MainApplication).getRadioPlayerService()
+        radioIdsLiveData = radioPlayerService?.getRadioIds()
+        radioIdsLiveData?.observeOnce(this) { updatedRadioIds ->
+            CoroutineScope(Dispatchers.IO).launch {
+                itemList.addAll(getFavoritesList(updatedRadioIds))
+                withContext(Dispatchers.Main) {
+                    adapter.notifyDataSetChanged()
+                }
+            }
+        }
+    }
+
+    private fun removeItem(position: Int) {
+        itemList.removeAt(position)
+        adapter.notifyItemRemoved(position)
+    }
+
+    // Other methods...
+
+    // Extension function to observe LiveData once
+    fun <T> LiveData<T>.observeOnce(owner: LifecycleOwner, observer: Observer<T>) {
+        observe(owner, object : Observer<T> {
+            override fun onChanged(t: T) {
+                observer.onChanged(t)
+                removeObserver(this)
+            }
+        })
     }
 
     fun onBackButtonClicked(view: View) {
@@ -52,8 +98,7 @@ class FavoritesActivity : ComponentActivity() {
         finish()
     }
 
-    private suspend fun getFavoritesList(): List<String> = withContext(Dispatchers.IO) {
-        radioIds = RadioPlayerService.radioIds
+    private suspend fun getFavoritesList(radioIds: List<String>): List<String> = withContext(Dispatchers.IO) {
         val radioNames = mutableListOf<String>()
 
         val retrofit = Retrofit.Builder()
@@ -94,6 +139,5 @@ class FavoritesActivity : ComponentActivity() {
                 radioResponse.data.country.title + ", " +
                 radioResponse.data.place.title;
     }
-
 }
 

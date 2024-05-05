@@ -7,7 +7,10 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class CustomAdapter(private val itemList: MutableList<String>) :
+class CustomAdapter(
+    private val itemList: MutableList<String>,
+    private val onDeleteClickListener: ((item: String) -> Unit)? = null
+) :
     RecyclerView.Adapter<CustomAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -26,8 +29,7 @@ class CustomAdapter(private val itemList: MutableList<String>) :
         holder.textView.text = item
 
         holder.deleteButton.setOnClickListener {
-            itemList.removeAt(holder.bindingAdapterPosition)
-            notifyItemRemoved(holder.bindingAdapterPosition)
+            onDeleteClickListener?.invoke(item)
         }
     }
 

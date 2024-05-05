@@ -23,6 +23,8 @@ import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -42,6 +44,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
+
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class RadioPlayerService : Service(){
     private val tag = "WorldRadio.RadioPlayerService"
@@ -53,9 +56,8 @@ class RadioPlayerService : Service(){
     private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
     private lateinit var focusRequest : AudioFocusRequest
 
-    companion object {
-        var radioIds = mutableListOf<String>()
-    }
+    private val radioIds = MutableLiveData<List<String>>(emptyList()) // LiveData for radio IDs
+
     private var radioPosition = 0
     private val ignoreInterval: Long = 500
     private var lastEventTime: Long = 0
@@ -106,19 +108,27 @@ class RadioPlayerService : Service(){
         GlobalScope.launch(Dispatchers.IO) {
             val inputStream = assets.open("radio-ids.txt")
             val reader = BufferedReader(InputStreamReader(inputStream))
+            val mutableList = mutableListOf<String>()
             var line: String?
             while (reader.readLine().also { line = it } != null) {
-                radioIds.add(line!!)
+                mutableList.add(line!!)
             }
             reader.close()
+            radioIds.postValue(mutableList)
         }
     }
 
     @OptIn(UnstableApi::class)
     private fun initializePlayer() {
         player = ExoPlayer.Builder(context).build()
-        val firstRadioId = radioIds[radioPosition]
-        changeRadio(firstRadioId)
+        radioIds.observeForever { updatedRadioIds ->
+            if (updatedRadioIds.isNotEmpty()) {
+                val firstRadioId = updatedRadioIds[radioPosition]
+                changeRadio(firstRadioId)
+            } else {
+                Log.w(tag, "radioIds list is empty")
+            }
+        }
     }
 
     private fun initializeMediaSession() {
@@ -261,19 +271,15 @@ class RadioPlayerService : Service(){
     }
 
     fun nextRadio() {
-        if (radioPosition == radioIds.size - 1)
-            radioPosition = 0
-        else
-            radioPosition++
-        changeRadio(radioIds[radioPosition])
+        val radioIdsValue = radioIds.value ?: return // Check if radioIds has a value
+        radioPosition = (radioPosition + 1) % radioIdsValue.size // Use modulo for circular behavior
+        changeRadio(radioIdsValue[radioPosition])
     }
 
     fun previousRadio() {
-        if (radioPosition == 0)
-            radioPosition = radioIds.size - 1
-        else
-            radioPosition--
-        changeRadio(radioIds[radioPosition])
+        val radioIdsValue = radioIds.value ?: return // Check if radioIds has a value
+        radioPosition = (radioPosition - 1 + radioIdsValue.size) % radioIdsValue.size // Handle negative modulo
+        changeRadio(radioIdsValue[radioPosition])
     }
 
     private fun createNotification(): Notification {
@@ -296,5 +302,19 @@ class RadioPlayerService : Service(){
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         builder.setContentIntent(pendingIntent)
         return builder.build()
+    }
+
+    fun getRadioIds(): LiveData<List<String>> {
+        return radioIds
+    }
+
+    fun deleteFavorite(position: Int) {
+        radioIds.value?.toMutableList()?.let { mutableList ->
+            if (position in 0 until mutableList.size) {
+                mutableList.removeAt(position)
+                radioIds.postValue(mutableList)
+            }
+        }
+        Log.i(tag, "deleting")
     }
 }
