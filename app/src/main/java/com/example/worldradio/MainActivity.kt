@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 
 
@@ -20,6 +21,11 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
 
     private lateinit var radioNameText: TextView
     private var radioPlayerService: RadioPlayerService? = null
+
+    object RadioIdsHolder {
+        val radioIdsLiveData: MutableLiveData<List<String>> = MutableLiveData()
+    }
+
     private var bound = false
 
     private val serviceObserver = Observer<List<String>> { radioIds ->
@@ -32,11 +38,13 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
 
         radioNameText = findViewById(R.id.radioNameText)
         radioPlayerService = (application as MainApplication).getRadioPlayerService()
-        radioPlayerService?.getRadioIds()?.observe(this, serviceObserver)
+        RadioIdsHolder.radioIdsLiveData.observe(this, serviceObserver)
     }
 
     override fun onStart() {
         super.onStart()
+        val cachedRadioIds: List<String> = FavoritesListCache.getStringList(this)
+        RadioIdsHolder.radioIdsLiveData.value = cachedRadioIds
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         bindService(serviceIntent, connection, BIND_AUTO_CREATE)
     }
@@ -65,6 +73,7 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
     override fun onDestroy() {
         super.onDestroy()
         radioPlayerService?.getRadioIds()?.removeObserver(serviceObserver)
+        (application as MainApplication).onTerminate()
     }
 
     override fun onRadioChange(radioName: String) {

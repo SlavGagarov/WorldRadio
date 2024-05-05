@@ -36,6 +36,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -46,6 +47,8 @@ import java.io.InputStreamReader
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@kotlin.OptIn(DelicateCoroutinesApi::class)
+
 class RadioPlayerService : Service(){
     private val tag = "WorldRadio.RadioPlayerService"
 
@@ -83,7 +86,21 @@ class RadioPlayerService : Service(){
         super.onCreate()
 
         context = applicationContext
-        loadRadioIds()
+        val loadedRadioIds = MainActivity.RadioIdsHolder.radioIdsLiveData.value
+
+        if (loadedRadioIds.isNullOrEmpty()) {
+            GlobalScope.launch(Dispatchers.Main) {
+                val isLoadedSuccessfully = loadRadioIds()
+                if (isLoadedSuccessfully) {
+                    FavoritesListCache.saveStringList(context, radioIds.value ?: emptyList())
+                } else {
+                    Log.e(tag, "Failed to load favorites from cache")
+                }
+            }
+        }
+        else {
+            radioIds.value = loadedRadioIds
+        }
         getAudioFocus()
     }
 
@@ -97,6 +114,9 @@ class RadioPlayerService : Service(){
     }
 
     override fun onDestroy() {
+        //update favorites for next time app is launched
+        FavoritesListCache.saveStringList(context, radioIds.value ?: emptyList())
+
         player.stop()
         player.release()
         mediaSession.release()
@@ -104,9 +124,8 @@ class RadioPlayerService : Service(){
         super.onDestroy()
     }
 
-    @kotlin.OptIn(DelicateCoroutinesApi::class)
-    private fun loadRadioIds() {
-        GlobalScope.launch(Dispatchers.IO) {
+    private suspend fun loadRadioIds(): Boolean {
+        return withContext(Dispatchers.IO) {
             val inputStream = assets.open("radio-ids.txt")
             val reader = BufferedReader(InputStreamReader(inputStream))
             val mutableList = mutableListOf<String>()
@@ -116,6 +135,7 @@ class RadioPlayerService : Service(){
             }
             reader.close()
             radioIds.postValue(mutableList)
+            return@withContext true // Return true to indicate successful loading
         }
     }
 

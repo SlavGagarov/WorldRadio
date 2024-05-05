@@ -41,6 +41,8 @@ class MainApplication : Application() {
     }
 
     override fun onTerminate() {
+        val serviceIntent = Intent(this, RadioPlayerService::class.java)
+        stopService(serviceIntent)
         unbindService(serviceConnection)
         super.onTerminate()
     }
