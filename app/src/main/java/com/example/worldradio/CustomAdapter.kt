@@ -26,8 +26,8 @@ class CustomAdapter(private val itemList: MutableList<String>) :
         holder.textView.text = item
 
         holder.deleteButton.setOnClickListener {
-            itemList.removeAt(position)
-            notifyItemRemoved(position)
+            itemList.removeAt(holder.bindingAdapterPosition)
+            notifyItemRemoved(holder.bindingAdapterPosition)
         }
     }
 
