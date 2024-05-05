@@ -15,11 +15,8 @@ class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Start the service
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         startService(serviceIntent)
-
-        // Bind to the service
         bindService()
     }
 
@@ -44,7 +41,6 @@ class MainApplication : Application() {
     }
 
     override fun onTerminate() {
-        // Unbind from the service
         unbindService(serviceConnection)
         super.onTerminate()
     }

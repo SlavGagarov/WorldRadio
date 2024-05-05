@@ -7,24 +7,24 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class CustomAdapter(
+class FavoritesAdapter(
     private val itemList: MutableList<String>,
     private val onDeleteClickListener: ((item: String) -> Unit)? = null
 ) :
-    RecyclerView.Adapter<CustomAdapter.ViewHolder>() {
+    RecyclerView.Adapter<FavoritesAdapter.FavoritesViewHolder>() {
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class FavoritesViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textView: TextView = view.findViewById(R.id.textView)
         val deleteButton: Button = view.findViewById(R.id.deleteButton)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FavoritesViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.list_item_layout, parent, false)
-        return ViewHolder(view)
+        return FavoritesViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: FavoritesViewHolder, position: Int) {
         val item = itemList[position]
         holder.textView.text = item
 

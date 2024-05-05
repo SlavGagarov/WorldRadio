@@ -56,9 +56,9 @@ class RadioPlayerService : Service(){
     private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
     private lateinit var focusRequest : AudioFocusRequest
 
-    private val radioIds = MutableLiveData<List<String>>(emptyList()) // LiveData for radio IDs
-
+    private val radioIds = MutableLiveData<List<String>>(emptyList())
     private var radioPosition = 0
+    private var currentRadioId = ""
     private val ignoreInterval: Long = 500
     private var lastEventTime: Long = 0
 
@@ -66,6 +66,7 @@ class RadioPlayerService : Service(){
     private var callback: RadioPlayerCallback? = null
     private val notificationId = 123
     private val binder = LocalBinder()
+
     inner class LocalBinder : Binder() {
         fun getService(): RadioPlayerService = this@RadioPlayerService
     }
@@ -124,7 +125,9 @@ class RadioPlayerService : Service(){
         radioIds.observeForever { updatedRadioIds ->
             if (updatedRadioIds.isNotEmpty()) {
                 val firstRadioId = updatedRadioIds[radioPosition]
-                changeRadio(firstRadioId)
+                if(firstRadioId != currentRadioId){
+                    changeRadio(firstRadioId)
+                }
             } else {
                 Log.w(tag, "radioIds list is empty")
             }
@@ -172,7 +175,6 @@ class RadioPlayerService : Service(){
         }
     }
 
-
     @OptIn(UnstableApi::class)
     private fun changeRadio(id: String) {
         player.stop()
@@ -192,6 +194,7 @@ class RadioPlayerService : Service(){
         player.playWhenReady = true
         player.prepare()
         fetchRadioById(id)
+        currentRadioId = radioIds.value?.get(radioPosition) ?: ""
         val position = radioPosition + 1
         Toast.makeText(context, "Playing $position", Toast.LENGTH_SHORT).show()
     }
@@ -271,14 +274,14 @@ class RadioPlayerService : Service(){
     }
 
     fun nextRadio() {
-        val radioIdsValue = radioIds.value ?: return // Check if radioIds has a value
-        radioPosition = (radioPosition + 1) % radioIdsValue.size // Use modulo for circular behavior
+        val radioIdsValue = radioIds.value ?: return
+        radioPosition = (radioPosition + 1) % radioIdsValue.size
         changeRadio(radioIdsValue[radioPosition])
     }
 
     fun previousRadio() {
-        val radioIdsValue = radioIds.value ?: return // Check if radioIds has a value
-        radioPosition = (radioPosition - 1 + radioIdsValue.size) % radioIdsValue.size // Handle negative modulo
+        val radioIdsValue = radioIds.value ?: return
+        radioPosition = (radioPosition - 1 + radioIdsValue.size) % radioIdsValue.size
         changeRadio(radioIdsValue[radioPosition])
     }
 
@@ -315,6 +318,5 @@ class RadioPlayerService : Service(){
                 radioIds.postValue(mutableList)
             }
         }
-        Log.i(tag, "deleting")
     }
 }

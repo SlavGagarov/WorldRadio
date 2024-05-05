@@ -1,6 +1,5 @@
 package com.example.worldradio
 
-import android.app.Application
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -14,9 +13,7 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import kotlinx.coroutines.async
@@ -30,37 +27,28 @@ import java.io.IOException
 class FavoritesActivity : ComponentActivity() {
     private val tag = "WorldRadio.FavoritesActivity"
 
-    private lateinit var adapter: CustomAdapter
+    private lateinit var adapter: FavoritesAdapter
     private lateinit var recyclerView: RecyclerView
     private val itemList = mutableListOf<String>()
-
-    // LiveData instance for observing changes
     private var radioIdsLiveData: LiveData<List<String>>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_favorite)
 
-        // Set up the RecyclerView
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Create the adapter and set it to the RecyclerView
-        adapter = CustomAdapter(itemList) { item ->
-            // Remove item from the list when delete button is clicked
-            adapter.notifyDataSetChanged()
-
-            // Call deleteFavorite method of RadioPlayerService to delete the item from the list
+        adapter = FavoritesAdapter(itemList) { item ->
             val radioPlayerService = (applicationContext as MainApplication).getRadioPlayerService()
-            // Assuming you have a deleteFavorite method that accepts the item itself
 
             val position = itemList.indexOf(item)
             radioPlayerService?.deleteFavorite(position)
             itemList.remove(item)
+            adapter.notifyItemRemoved(position)
         }
         recyclerView.adapter = adapter
 
-        // Load itemList only once
         val radioPlayerService = (applicationContext as MainApplication).getRadioPlayerService()
         radioIdsLiveData = radioPlayerService?.getRadioIds()
         radioIdsLiveData?.observeOnce(this) { updatedRadioIds ->
@@ -73,18 +61,10 @@ class FavoritesActivity : ComponentActivity() {
         }
     }
 
-    private fun removeItem(position: Int) {
-        itemList.removeAt(position)
-        adapter.notifyItemRemoved(position)
-    }
-
-    // Other methods...
-
-    // Extension function to observe LiveData once
-    fun <T> LiveData<T>.observeOnce(owner: LifecycleOwner, observer: Observer<T>) {
+    private fun <T> LiveData<T>.observeOnce(owner: LifecycleOwner, observer: Observer<T>) {
         observe(owner, object : Observer<T> {
-            override fun onChanged(t: T) {
-                observer.onChanged(t)
+            override fun onChanged(value: T) {
+                observer.onChanged(value)
                 removeObserver(this)
             }
         })
@@ -98,46 +78,47 @@ class FavoritesActivity : ComponentActivity() {
         finish()
     }
 
-    private suspend fun getFavoritesList(radioIds: List<String>): List<String> = withContext(Dispatchers.IO) {
-        val radioNames = mutableListOf<String>()
+    private suspend fun getFavoritesList(radioIds: List<String>): List<String> =
+        withContext(Dispatchers.IO) {
+            val radioNames = mutableListOf<String>()
 
-        val retrofit = Retrofit.Builder()
-            .baseUrl("http://radio.garden/api/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val radioApiService = retrofit.create(RadioApiService::class.java)
+            val retrofit = Retrofit.Builder()
+                .baseUrl("http://radio.garden/api/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+            val radioApiService = retrofit.create(RadioApiService::class.java)
 
-        val requests = radioIds.map { id ->
-            async {
-                val call = radioApiService.getRadio(id)
-                try {
-                    val response = call.execute()
-                    if (response.isSuccessful) {
-                        val radioResponse = response.body()
-                        if (radioResponse != null) {
-                            processRadioData(radioResponse)
+            val requests = radioIds.map { id ->
+                async {
+                    val call = radioApiService.getRadio(id)
+                    try {
+                        val response = call.execute()
+                        if (response.isSuccessful) {
+                            val radioResponse = response.body()
+                            if (radioResponse != null) {
+                                processRadioData(radioResponse)
+                            } else {
+                                null
+                            }
                         } else {
                             null
                         }
-                    } else {
+                    } catch (e: IOException) {
+                        Log.e(tag, "Error when getting radio details data")
                         null
                     }
-                } catch (e: IOException) {
-                    Log.e(tag, "Error when getting radio details data")
-                    null
                 }
             }
-        }
 
-        val results = requests.awaitAll()
-        radioNames.addAll(results.filterNotNull())
-        radioNames
-    }
+            val results = requests.awaitAll()
+            radioNames.addAll(results.filterNotNull())
+            radioNames
+        }
 
     private fun processRadioData(radioResponse: RadioResponse): String {
         return radioResponse.data.title + ", " +
                 radioResponse.data.country.title + ", " +
-                radioResponse.data.place.title;
+                radioResponse.data.place.title
     }
 }
 
