@@ -83,7 +83,7 @@ class FavoritesActivity : ComponentActivity() {
             val radioNames = mutableListOf<String>()
 
             val retrofit = Retrofit.Builder()
-                .baseUrl("http://radio.garden/api/")
+                .baseUrl(RadioApiService.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
             val radioApiService = retrofit.create(RadioApiService::class.java)

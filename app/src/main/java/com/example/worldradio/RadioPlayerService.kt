@@ -49,7 +49,7 @@ import java.io.InputStreamReader
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @kotlin.OptIn(DelicateCoroutinesApi::class)
 
-class RadioPlayerService : Service(){
+class RadioPlayerService : Service() {
     private val tag = "WorldRadio.RadioPlayerService"
 
     private lateinit var player: Player
@@ -57,7 +57,7 @@ class RadioPlayerService : Service(){
 
     private lateinit var audioManager: AudioManager
     private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
-    private lateinit var focusRequest : AudioFocusRequest
+    private lateinit var focusRequest: AudioFocusRequest
 
     private val radioIds = MutableLiveData<List<String>>(emptyList())
     private var radioPosition = 0
@@ -65,7 +65,7 @@ class RadioPlayerService : Service(){
     private val ignoreInterval: Long = 500
     private var lastEventTime: Long = 0
 
-    private lateinit var context : Context
+    private lateinit var context: Context
     private var callback: RadioPlayerCallback? = null
     private val notificationId = 123
     private val binder = LocalBinder()
@@ -92,14 +92,13 @@ class RadioPlayerService : Service(){
             GlobalScope.launch(Dispatchers.Main) {
                 val isLoadedSuccessfully = loadRadioIds()
                 if (isLoadedSuccessfully) {
-                    FavoritesListCache.saveStringList(context, radioIds.value ?: emptyList())
+                    FavoritesListCache.saveFavoritesList(context, radioIds.value ?: emptyList())
                     getAudioFocus()
                 } else {
                     Log.e(tag, "Failed to load favorites from cache")
                 }
             }
-        }
-        else {
+        } else {
             radioIds.value = loadedRadioIds
             getAudioFocus()
         }
@@ -133,23 +132,22 @@ class RadioPlayerService : Service(){
             }
             reader.close()
             radioIds.postValue(mutableList)
-            return@withContext true // Return true to indicate successful loading
+            return@withContext true
         }
     }
 
     @OptIn(UnstableApi::class)
     private fun initializePlayer() {
         player = ExoPlayer.Builder(context).build()
-        if(radioIds.value?.isNotEmpty() == true){
+        if (radioIds.value?.isNotEmpty() == true) {
             changeRadio(radioIds.value!![0])
-        }
-        else {
+        } else {
             Log.w(tag, "radioIds list is empty")
         }
     }
 
     private fun initializeMediaSession() {
-        mediaSession = MediaSession(context, "MyMediaSession")
+        mediaSession = MediaSession(context, "WorldRadioMediaSession")
 
         mediaSession.setCallback(object : MediaSession.Callback() {
             override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
@@ -180,10 +178,26 @@ class RadioPlayerService : Service(){
             val event =
                 mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
             if (event != null) {
-                if (event.keyCode == KeyEvent.KEYCODE_MEDIA_NEXT) {
-                    nextRadio()
-                } else if (event.keyCode == KeyEvent.KEYCODE_MEDIA_PREVIOUS) {
-                    previousRadio()
+                when (event.keyCode) {
+                    KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                        nextRadio()
+                    }
+
+                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                        previousRadio()
+                    }
+
+                    KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                        player.pause()
+                    }
+
+                    KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                        player.play()
+                    }
+
+                    else -> {
+                        Log.i(tag, "No handler configured for key event: " + event.keyCode)
+                    }
                 }
             }
         }
@@ -215,7 +229,7 @@ class RadioPlayerService : Service(){
 
     private fun fetchRadioById(id: String) {
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://radio.garden/api/")
+            .baseUrl(RadioApiService.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         val radioApiService = retrofit.create(RadioApiService::class.java)
@@ -232,6 +246,7 @@ class RadioPlayerService : Service(){
                     Log.e(tag, "Failed to fetch radio")
                 }
             }
+
             override fun onFailure(call: Call<RadioResponse>, t: Throwable) {
                 Log.e(tag, "Error fetching radio: ${t.message}")
             }
@@ -250,19 +265,22 @@ class RadioPlayerService : Service(){
         mediaSession.setMetadata(metadataBuilder.build())
     }
 
-    private fun getAudioFocus(){
+    private fun getAudioFocus() {
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
             when (focusChange) {
                 AudioManager.AUDIOFOCUS_LOSS -> {
                     player.pause()
                 }
+
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                     //temp audio focus loss
                 }
+
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                     //temp audio focus loss, new focus owner doesn't require others to be silent
                 }
+
                 AudioManager.AUDIOFOCUS_GAIN -> {
                     player.play()
                 }
@@ -301,8 +319,13 @@ class RadioPlayerService : Service(){
 
     private fun createNotification(): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel("channel_id", "Channel Name", NotificationManager.IMPORTANCE_LOW)
+            val notificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel(
+                "channel_id",
+                "Channel Name",
+                NotificationManager.IMPORTANCE_LOW
+            )
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -330,7 +353,7 @@ class RadioPlayerService : Service(){
             if (position in 0 until mutableList.size) {
                 mutableList.removeAt(position)
                 radioIds.postValue(mutableList)
-                FavoritesListCache.saveStringList(context, mutableList)
+                FavoritesListCache.saveFavoritesList(context, mutableList)
             }
         }
     }

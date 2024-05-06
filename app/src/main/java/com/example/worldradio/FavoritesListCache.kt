@@ -10,7 +10,7 @@ object FavoritesListCache {
     private const val PREF_NAME = "StringListCache"
     private const val KEY_STRING_LIST = "string_list"
 
-    fun saveStringList(context: Context, stringList: List<String>) {
+    fun saveFavoritesList(context: Context, stringList: List<String>) {
         Log.i(TAG, "Saving favorites to cache")
         val sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
@@ -20,7 +20,7 @@ object FavoritesListCache {
         editor.apply()
     }
 
-    fun getStringList(context: Context): List<String> {
+    fun getFavoritesList(context: Context): List<String> {
         Log.i(TAG, "Getting favorites from cache")
         val sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         val gson = Gson()
