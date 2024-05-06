@@ -187,14 +187,15 @@ class RadioPlayerService : Service() {
                         previousRadio()
                     }
 
-                    KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                        player.pause()
+                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                    KeyEvent.KEYCODE_MEDIA_PLAY,
+                    KeyEvent.KEYCODE_MEDIA_PAUSE
+                    -> {
+                        if(player.isPlaying)
+                            player.pause()
+                        else
+                            player.play()
                     }
-
-                    KeyEvent.KEYCODE_MEDIA_PLAY -> {
-                        player.play()
-                    }
-
                     else -> {
                         Log.i(tag, "No handler configured for key event: " + event.keyCode)
                     }
