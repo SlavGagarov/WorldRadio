@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
 
     override fun onStart() {
         super.onStart()
-        val cachedRadioIds: List<String> = FavoritesListCache.getStringList(this)
+        val cachedRadioIds: List<String> = FavoritesListCache.getFavoritesList(this)
         RadioIdsHolder.radioIdsLiveData.value = cachedRadioIds
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         bindService(serviceIntent, connection, BIND_AUTO_CREATE)

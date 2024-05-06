@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class FavoritesAdapter(
     private val itemList: MutableList<String>,
-    private val onDeleteClickListener: ((item: String) -> Unit)? = null
+    private val onDeleteClickListener: ((item: String) -> Unit)? = null,
 ) :
     RecyclerView.Adapter<FavoritesAdapter.FavoritesViewHolder>() {
 
