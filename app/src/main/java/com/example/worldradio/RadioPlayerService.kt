@@ -363,9 +363,11 @@ class RadioPlayerService : Service() {
 
     fun addFavorite(radioId: String) {
         radioIds.value?.toMutableList()?.let { mutableList ->
-            mutableList.add(radioId)
-            radioIds.postValue(mutableList)
-            FavoritesListCache.saveFavoritesList(context, mutableList)
+            if(!mutableList.contains(radioId)) {
+                mutableList.add(radioId)
+                radioIds.postValue(mutableList)
+                FavoritesListCache.saveFavoritesList(context, mutableList)
+            }
         }
     }
 }

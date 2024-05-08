@@ -38,7 +38,6 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
         setContentView(R.layout.activity_random_radio)
         radioNameText = findViewById(R.id.radioNameText)
 
-
         radioPlayerService = (application as MainApplication).getRadioPlayerService()
         radioPlayerService?.addCallback(this@RandomRadioActivity)
 
