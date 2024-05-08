@@ -93,4 +93,8 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
     fun onFavoritesClicked(view: View) {
         startActivity(Intent(this@MainActivity, FavoritesActivity::class.java))
     }
+
+    fun onRandomRadioClicked(view: View) {
+        startActivity(Intent(this@MainActivity, RandomRadioActivity::class.java))
+    }
 }

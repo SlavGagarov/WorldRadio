@@ -205,7 +205,7 @@ class RadioPlayerService : Service() {
     }
 
     @OptIn(UnstableApi::class)
-    private fun changeRadio(id: String) {
+    fun changeRadio(id: String) {
         player.stop()
         val audioUrl = "http://radio.garden/api/ara/content/listen/${id}/channel.mp3"
 
@@ -236,8 +236,8 @@ class RadioPlayerService : Service() {
         val radioApiService = retrofit.create(RadioApiService::class.java)
         val call = radioApiService.getRadio(id)
 
-        call.enqueue(object : Callback<RadioResponse> {
-            override fun onResponse(call: Call<RadioResponse>, response: Response<RadioResponse>) {
+        call.enqueue(object : Callback<RadioDetailsResponse> {
+            override fun onResponse(call: Call<RadioDetailsResponse>, response: Response<RadioDetailsResponse>) {
                 if (response.isSuccessful) {
                     val radioResponse = response.body()
                     if (radioResponse != null) {
@@ -248,20 +248,20 @@ class RadioPlayerService : Service() {
                 }
             }
 
-            override fun onFailure(call: Call<RadioResponse>, t: Throwable) {
+            override fun onFailure(call: Call<RadioDetailsResponse>, t: Throwable) {
                 Log.e(tag, "Error fetching radio: ${t.message}")
             }
         })
     }
 
-    fun updateRadioName(radioResponse: RadioResponse) {
-        val place = radioResponse.data.country.title + ", " +
-                radioResponse.data.place.title
-        val updateText = radioResponse.data.title + "\n" + place
+    fun updateRadioName(radioDetailsResponse: RadioDetailsResponse) {
+        val place = radioDetailsResponse.data.country.title + ", " +
+                radioDetailsResponse.data.place.title
+        val updateText = radioDetailsResponse.data.title + "\n" + place
         callback?.onRadioChange(updateText)
 
         val metadataBuilder = MediaMetadata.Builder()
-        metadataBuilder.putString(MediaMetadata.METADATA_KEY_TITLE, radioResponse.data.title)
+        metadataBuilder.putString(MediaMetadata.METADATA_KEY_TITLE, radioDetailsResponse.data.title)
         metadataBuilder.putString(MediaMetadata.METADATA_KEY_ARTIST, place)
         mediaSession.setMetadata(metadataBuilder.build())
     }

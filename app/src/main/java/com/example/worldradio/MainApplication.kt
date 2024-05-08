@@ -6,11 +6,17 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import androidx.annotation.RequiresApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-class MainApplication : Application() {
+class MainApplication : Application(){
     private var radioPlayerService: RadioPlayerService? = null
 
     override fun onCreate() {
@@ -45,5 +51,13 @@ class MainApplication : Application() {
         stopService(serviceIntent)
         unbindService(serviceConnection)
         super.onTerminate()
+    }
+
+    fun changeRadio(radioId : String){
+        Handler(Looper.getMainLooper()).post {
+            radioPlayerService?.changeRadio(radioId)
+        }
+
+//        radioPlayerService?.changeRadio(radioId)
     }
 }

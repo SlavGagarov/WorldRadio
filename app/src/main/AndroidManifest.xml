@@ -22,6 +22,11 @@
         android:theme="@style/Theme.WorldRadio"
         tools:targetApi="31">
         <activity
+            android:name=".RandomRadioActivity"
+            android:exported="false"
+            android:label="@string/title_activity_random_radio"
+            android:theme="@style/Theme.WorldRadio" />
+        <activity
             android:name=".FavoritesActivity"
             android:exported="false"
             android:label="@string/title_activity_favorites"

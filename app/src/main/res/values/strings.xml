@@ -3,4 +3,8 @@
     <string name="previous_radio">Previous Radio</string>
     <string name="next_radio">Next Radio</string>
     <string name="title_activity_favorites">FavoritesActivity</string>
+    <string name="title_activity_random_radio">RandomRadioActivity</string>
+    <string name="random_radios">Random Radios</string>
+    <string name="next_random_radio">Next Random Radio</string>
+    <string name="back">Back</string>
 </resources>
