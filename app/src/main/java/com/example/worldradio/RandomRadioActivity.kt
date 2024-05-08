@@ -59,6 +59,10 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
         }
     }
 
+    fun onAddToFavoritesClicked(view: View) {
+        radioPlayerService?.addFavorite(currentRadioId)
+    }
+
     fun onBackButtonClicked(view: View) {
         Log.d(tag, "Back Button Clicked Clicked")
         val intent = Intent(this@RandomRadioActivity, MainActivity::class.java)
