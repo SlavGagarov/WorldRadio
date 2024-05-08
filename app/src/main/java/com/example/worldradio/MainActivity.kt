@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
             val binder = service as RadioPlayerService.LocalBinder
             radioPlayerService = binder.getService()
             bound = true
-            radioPlayerService?.setCallback(this@MainActivity)
+            radioPlayerService?.addCallback(this@MainActivity)
         }
 
         override fun onServiceDisconnected(className: ComponentName) {

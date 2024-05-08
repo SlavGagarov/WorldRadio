@@ -21,7 +21,7 @@ import java.io.IOException
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(DelicateCoroutinesApi::class)
 
-class RandomRadioActivity : ComponentActivity() {
+class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback {
     private val tag = "WorldRadio.RandomRadioActivity"
 
     private var previousRadioId = ""
@@ -30,11 +30,15 @@ class RandomRadioActivity : ComponentActivity() {
 
     private lateinit var radioNameText: TextView
     private lateinit var radioApiService: RadioApiService
+    private var radioPlayerService: RadioPlayerService? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_random_radio)
         radioNameText = findViewById(R.id.radioNameText)
+
+        radioPlayerService = (application as MainApplication).getRadioPlayerService()
+        radioPlayerService?.addCallback(this@RandomRadioActivity)
 
         setupApiService()
         getAllPlaces()
@@ -48,6 +52,7 @@ class RandomRadioActivity : ComponentActivity() {
 
     fun onPreviousRadioButtonClicked(view: View) {
         val mainApplication = application as MainApplication
+        currentRadioId = previousRadioId
 
         if(previousRadioId.isNotEmpty()) {
             mainApplication.changeRadio(previousRadioId)
@@ -129,6 +134,12 @@ class RandomRadioActivity : ComponentActivity() {
                 Log.e(tag, "Error when getting place details data", e)
             }
             radioIds
+        }
+    }
+
+    override fun onRadioChange(radioName: String) {
+        runOnUiThread {
+            radioNameText.text = radioName
         }
     }
 }

@@ -66,7 +66,7 @@ class RadioPlayerService : Service() {
     private var lastEventTime: Long = 0
 
     private lateinit var context: Context
-    private var callback: RadioPlayerCallback? = null
+    private val callbacks = mutableListOf<RadioPlayerCallback>()
     private val notificationId = 123
     private val binder = LocalBinder()
 
@@ -78,8 +78,8 @@ class RadioPlayerService : Service() {
         fun onRadioChange(radioName: String)
     }
 
-    fun setCallback(callback: RadioPlayerCallback) {
-        this.callback = callback
+    fun addCallback(callback: RadioPlayerCallback) {
+        callbacks.add(callback)
     }
 
     override fun onCreate() {
@@ -258,7 +258,9 @@ class RadioPlayerService : Service() {
         val place = radioDetailsResponse.data.country.title + ", " +
                 radioDetailsResponse.data.place.title
         val updateText = radioDetailsResponse.data.title + "\n" + place
-        callback?.onRadioChange(updateText)
+        for(callback in callbacks){
+            callback.onRadioChange(updateText)
+        }
 
         val metadataBuilder = MediaMetadata.Builder()
         metadataBuilder.putString(MediaMetadata.METADATA_KEY_TITLE, radioDetailsResponse.data.title)
