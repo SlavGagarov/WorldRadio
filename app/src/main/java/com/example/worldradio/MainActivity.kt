@@ -3,6 +3,7 @@ package com.example.worldradio
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
 
         radioNameText = findViewById(R.id.radioNameText)
         radioPlayerService = (application as MainApplication).getRadioPlayerService()

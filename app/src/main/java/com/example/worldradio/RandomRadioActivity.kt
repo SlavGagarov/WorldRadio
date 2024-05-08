@@ -1,6 +1,7 @@
 package com.example.worldradio
 
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -35,7 +36,9 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_random_radio)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         radioNameText = findViewById(R.id.radioNameText)
+
 
         radioPlayerService = (application as MainApplication).getRadioPlayerService()
         radioPlayerService?.addCallback(this@RandomRadioActivity)
