@@ -1,4 +1,4 @@
-package com.example.worldradio
+package com.example.worldradio.dto
 
 import com.google.gson.annotations.SerializedName
 

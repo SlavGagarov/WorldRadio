@@ -1,4 +1,4 @@
-package com.example.worldradio
+package com.example.worldradio.service
 
 
 import android.app.Notification
@@ -32,6 +32,10 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import com.example.worldradio.activity.favorites.FavoritesListCache
+import com.example.worldradio.activity.MainActivity
+import com.example.worldradio.R
+import com.example.worldradio.dto.RadioDetailsResponse
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -224,8 +228,6 @@ class RadioPlayerService : Service() {
         player.prepare()
         fetchRadioById(id)
         currentRadioId = radioIds.value?.get(radioPosition) ?: ""
-        val position = radioPosition + 1
-        Toast.makeText(context, "Playing $position", Toast.LENGTH_SHORT).show()
     }
 
     private fun fetchRadioById(id: String) {
@@ -367,6 +369,7 @@ class RadioPlayerService : Service() {
                 mutableList.add(radioId)
                 radioIds.postValue(mutableList)
                 FavoritesListCache.saveFavoritesList(context, mutableList)
+                Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
             }
         }
     }

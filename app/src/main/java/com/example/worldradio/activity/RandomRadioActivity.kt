@@ -1,7 +1,6 @@
-package com.example.worldradio
+package com.example.worldradio.activity
 
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -9,6 +8,10 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
+import com.example.worldradio.MainApplication
+import com.example.worldradio.R
+import com.example.worldradio.service.RadioApiService
+import com.example.worldradio.service.RadioPlayerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers

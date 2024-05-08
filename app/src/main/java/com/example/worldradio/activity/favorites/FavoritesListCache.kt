@@ -1,4 +1,4 @@
-package com.example.worldradio
+package com.example.worldradio.activity.favorites
 
 import android.content.Context
 import com.google.gson.Gson

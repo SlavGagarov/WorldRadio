@@ -10,10 +10,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.annotation.RequiresApi
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.example.worldradio.service.RadioPlayerService
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class MainApplication : Application(){

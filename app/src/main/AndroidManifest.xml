@@ -22,19 +22,19 @@
         android:theme="@style/Theme.WorldRadio"
         tools:targetApi="31">
         <activity
-            android:name=".RandomRadioActivity"
+            android:name=".activity.RandomRadioActivity"
             android:screenOrientation="portrait"
             android:exported="false"
             android:label="@string/title_activity_random_radio"
             android:theme="@style/Theme.WorldRadio" />
         <activity
-            android:name=".FavoritesActivity"
+            android:name=".activity.favorites.FavoritesActivity"
             android:screenOrientation="portrait"
             android:exported="false"
             android:label="@string/title_activity_favorites"
             android:theme="@style/Theme.WorldRadio" />
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.MainActivity"
             android:screenOrientation="portrait"
             android:exported="true"
             android:theme="@style/Theme.WorldRadio">
@@ -45,7 +45,7 @@
         </activity>
 
         <service
-            android:name=".RadioPlayerService"
+            android:name=".service.RadioPlayerService"
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback" />

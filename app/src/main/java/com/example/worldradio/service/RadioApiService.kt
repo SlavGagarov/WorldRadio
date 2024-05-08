@@ -1,5 +1,8 @@
-package com.example.worldradio
+package com.example.worldradio.service
 
+import com.example.worldradio.dto.PlaceDetailsResponse
+import com.example.worldradio.dto.PlaceRadiosDetails
+import com.example.worldradio.dto.RadioDetailsResponse
 import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Path
