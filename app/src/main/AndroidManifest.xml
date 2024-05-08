@@ -23,21 +23,23 @@
         tools:targetApi="31">
         <activity
             android:name=".RandomRadioActivity"
+            android:screenOrientation="portrait"
             android:exported="false"
             android:label="@string/title_activity_random_radio"
             android:theme="@style/Theme.WorldRadio" />
         <activity
             android:name=".FavoritesActivity"
+            android:screenOrientation="portrait"
             android:exported="false"
             android:label="@string/title_activity_favorites"
             android:theme="@style/Theme.WorldRadio" />
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:exported="true"
             android:theme="@style/Theme.WorldRadio">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
