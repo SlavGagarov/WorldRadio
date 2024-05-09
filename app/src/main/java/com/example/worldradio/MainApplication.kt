@@ -69,12 +69,6 @@ class MainApplication : Application(){
         super.onTerminate()
     }
 
-    fun changeRadio(radioId : String){
-        Handler(Looper.getMainLooper()).post {
-            radioPlayerService?.changeRadio(radioId)
-        }
-    }
-
     fun playNextRadio(){
         Handler(Looper.getMainLooper()).post {
             radioPlayerService?.playNextRadio()
