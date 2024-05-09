@@ -32,10 +32,13 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import com.example.worldradio.MainApplication
+import com.example.worldradio.MainApplication.SharedDataHolder.mode
 import com.example.worldradio.activity.favorites.FavoritesListCache
-import com.example.worldradio.activity.MainActivity
 import com.example.worldradio.R
+import com.example.worldradio.WorldRadioConstants
 import com.example.worldradio.dto.RadioDetailsResponse
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -66,6 +69,7 @@ class RadioPlayerService : Service() {
     private val radioIds = MutableLiveData<List<String>>(emptyList())
     private var radioPosition = 0
     private var currentRadioId = ""
+    private var previousRadioId = ""
     private val ignoreInterval: Long = 500
     private var lastEventTime: Long = 0
 
@@ -90,7 +94,7 @@ class RadioPlayerService : Service() {
         super.onCreate()
 
         context = applicationContext
-        val loadedRadioIds = MainActivity.RadioIdsHolder.radioIdsLiveData.value
+        val loadedRadioIds = MainApplication.SharedDataHolder.radioIdsLiveData.value
 
         if (loadedRadioIds.isNullOrEmpty()) {
             GlobalScope.launch(Dispatchers.Main) {
@@ -184,11 +188,11 @@ class RadioPlayerService : Service() {
             if (event != null) {
                 when (event.keyCode) {
                     KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                        nextRadio()
+                        playNextRadio()
                     }
 
                     KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                        previousRadio()
+                        playPreviousRadio()
                     }
 
                     KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
@@ -227,7 +231,42 @@ class RadioPlayerService : Service() {
         player.playWhenReady = true
         player.prepare()
         fetchRadioById(id)
-        currentRadioId = radioIds.value?.get(radioPosition) ?: ""
+    }
+
+    fun playNextRadio(){
+        when(mode.value.toString()) {
+            WorldRadioConstants.FAVORITES_MODE -> {
+                nextRadio()
+            }
+            WorldRadioConstants.RANDOM_MODE -> {
+                val mainApplication = application as MainApplication
+                CoroutineScope(Dispatchers.Main).launch {
+                    previousRadioId = currentRadioId
+                    currentRadioId = mainApplication.getRandomRadio()
+                    changeRadio(currentRadioId)
+                }
+            }
+            else -> {
+                Log.e(tag, "Unknown mode: $mode")
+            }
+        }
+    }
+
+    fun playPreviousRadio(){
+        when(mode.value.toString()) {
+            WorldRadioConstants.FAVORITES_MODE -> {
+                previousRadio()
+            }
+            WorldRadioConstants.RANDOM_MODE -> {
+                val temp = currentRadioId
+                currentRadioId = previousRadioId
+                previousRadioId = temp
+                changeRadio(currentRadioId)
+            }
+            else -> {
+                Log.e(tag, "Unknown mode: $mode")
+            }
+        }
     }
 
     private fun fetchRadioById(id: String) {
@@ -313,12 +352,16 @@ class RadioPlayerService : Service() {
     fun nextRadio() {
         val radioIdsValue = radioIds.value ?: return
         radioPosition = (radioPosition + 1) % radioIdsValue.size
+        previousRadioId = currentRadioId
+        currentRadioId = radioIdsValue[radioPosition]
         changeRadio(radioIdsValue[radioPosition])
     }
 
     fun previousRadio() {
         val radioIdsValue = radioIds.value ?: return
         radioPosition = (radioPosition - 1 + radioIdsValue.size) % radioIdsValue.size
+        previousRadioId = currentRadioId
+        currentRadioId = radioIdsValue[radioPosition]
         changeRadio(radioIdsValue[radioPosition])
     }
 
@@ -363,10 +406,10 @@ class RadioPlayerService : Service() {
         }
     }
 
-    fun addFavorite(radioId: String) {
+    fun addCurrentFavorite(){
         radioIds.value?.toMutableList()?.let { mutableList ->
-            if(!mutableList.contains(radioId)) {
-                mutableList.add(radioId)
+            if(!mutableList.contains(currentRadioId)) {
+                mutableList.add(currentRadioId)
                 radioIds.postValue(mutableList)
                 FavoritesListCache.saveFavoritesList(context, mutableList)
                 Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()

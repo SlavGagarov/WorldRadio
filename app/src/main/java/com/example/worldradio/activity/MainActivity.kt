@@ -16,6 +16,7 @@ import androidx.lifecycle.Observer
 import com.example.worldradio.activity.favorites.FavoritesListCache
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
+import com.example.worldradio.WorldRadioConstants
 import com.example.worldradio.activity.favorites.FavoritesActivity
 import com.example.worldradio.service.RadioPlayerService
 
@@ -27,10 +28,6 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
     private lateinit var radioNameText: TextView
     private var radioPlayerService: RadioPlayerService? = null
 
-    object RadioIdsHolder {
-        val radioIdsLiveData: MutableLiveData<List<String>> = MutableLiveData()
-    }
-
     private var bound = false
 
     private val serviceObserver = Observer<List<String>> { radioIds ->
@@ -41,15 +38,16 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        MainApplication.SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)
         radioNameText = findViewById(R.id.radioNameText)
         radioPlayerService = (application as MainApplication).getRadioPlayerService()
-        RadioIdsHolder.radioIdsLiveData.observe(this, serviceObserver)
+        MainApplication.SharedDataHolder.radioIdsLiveData.observe(this, serviceObserver)
     }
 
     override fun onStart() {
         super.onStart()
         val cachedRadioIds: List<String> = FavoritesListCache.getFavoritesList(this)
-        RadioIdsHolder.radioIdsLiveData.value = cachedRadioIds
+        MainApplication.SharedDataHolder.radioIdsLiveData.value = cachedRadioIds
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         bindService(serviceIntent, connection, BIND_AUTO_CREATE)
     }

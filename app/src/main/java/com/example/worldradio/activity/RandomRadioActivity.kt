@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
+import com.example.worldradio.WorldRadioConstants
 import com.example.worldradio.service.RadioApiService
 import com.example.worldradio.service.RadioPlayerService
 import kotlinx.coroutines.CoroutineScope
@@ -28,10 +29,6 @@ import java.io.IOException
 class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback {
     private val tag = "WorldRadio.RandomRadioActivity"
 
-    private var previousRadioId = ""
-    private var currentRadioId = ""
-    private val allPlacesIds = mutableListOf<String>()
-
     private lateinit var radioNameText: TextView
     private lateinit var radioApiService: RadioApiService
     private var radioPlayerService: RadioPlayerService? = null
@@ -41,6 +38,7 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
         setContentView(R.layout.activity_random_radio)
         radioNameText = findViewById(R.id.radioNameText)
 
+        MainApplication.SharedDataHolder.mode.postValue(WorldRadioConstants.RANDOM_MODE)
         radioPlayerService = (application as MainApplication).getRadioPlayerService()
         radioPlayerService?.addCallback(this@RandomRadioActivity)
 
@@ -56,15 +54,11 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
 
     fun onPreviousRadioButtonClicked(view: View) {
         val mainApplication = application as MainApplication
-        currentRadioId = previousRadioId
-
-        if(previousRadioId.isNotEmpty()) {
-            mainApplication.changeRadio(previousRadioId)
-        }
+        mainApplication.playPreviousRadio()
     }
 
     fun onAddToFavoritesClicked(view: View) {
-        radioPlayerService?.addFavorite(currentRadioId)
+        radioPlayerService?.addCurrentFavorite()
     }
 
     fun onBackButtonClicked(view: View) {
@@ -88,15 +82,17 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
             val call = radioApiService.getAllPlaces()
             try {
                 val response = call.execute()
+                val mutableList = mutableListOf<String>()
                 if (response.isSuccessful) {
                     val placeDetailsResponse = response.body()
                     if (placeDetailsResponse != null) {
                         withContext(Dispatchers.Main) {
                             for (place in placeDetailsResponse.data.list) {
-                                allPlacesIds.add(place.id)
+                                mutableList.add(place.id)
+                                MainApplication.SharedDataHolder.allPlacesIds.postValue(mutableList)
                             }
-                            playRandomRadio()
                         }
+                        playRandomRadio()
                     }
                 }
             } catch (e: IOException) {
@@ -105,43 +101,10 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
         }
     }
 
-    private suspend fun playRandomRadio(){
-        val randomPlaceId = allPlacesIds.random()
-        val radioIds = getRadiosForPlace(randomPlaceId)
-
-        previousRadioId = currentRadioId
-        val randomRadioId = radioIds.random()
-        currentRadioId = randomRadioId
-
+    private fun playRandomRadio(){
         val mainApplication = application as MainApplication
-        mainApplication.changeRadio(randomRadioId)
-    }
-
-    private suspend fun getRadiosForPlace(placeId:String): List<String> {
-        return withContext(Dispatchers.IO) {
-            val radioIds = mutableListOf<String>()
-            try {
-                val call = radioApiService.getPlaceRadios(placeId)
-                val response = call.execute()
-                if (response.isSuccessful) {
-                    val placeRadiosDetailsResponse = response.body()
-                    if (placeRadiosDetailsResponse != null) {
-                        val localRadioItems = placeRadiosDetailsResponse.data.content.first().items
-                        for(radio in localRadioItems){
-                            val href = radio.href
-                            if (href != null) {
-                                val id = href.substringAfterLast("/")
-                                radioIds.add(id)
-                            } else {
-                                Log.e(tag, "href is null for radio: $radio")
-                            }
-                        }
-                    }
-                }
-            } catch (e: IOException) {
-                Log.e(tag, "Error when getting place details data", e)
-            }
-            radioIds
+        CoroutineScope(Dispatchers.Main).launch {
+            mainApplication.playNextRadio()
         }
     }
 
