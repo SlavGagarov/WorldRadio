@@ -25,6 +25,6 @@
             android:layout_marginStart="16dp"
             android:layout_marginBottom="16dp"
             android:onClick="onBackButtonClicked"
-            android:text="Back" />
+            android:text="@string/back" />
     </RelativeLayout>
 </LinearLayout>

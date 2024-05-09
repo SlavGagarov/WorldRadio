@@ -1,4 +1,4 @@
-package com.example.worldradio
+package com.example.worldradio.activity.favorites
 
 import android.content.Intent
 import android.os.Build
@@ -12,6 +12,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.worldradio.MainApplication
+import com.example.worldradio.R
+import com.example.worldradio.activity.MainActivity
+import com.example.worldradio.dto.RadioDetailsResponse
+import com.example.worldradio.service.RadioApiService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import retrofit2.Retrofit
@@ -71,7 +76,7 @@ class FavoritesActivity : ComponentActivity() {
     }
 
     fun onBackButtonClicked(view: View) {
-        Log.d(tag, "Favorites Clicked")
+        Log.d(tag, "Back Button Clicked Clicked")
         val intent = Intent(this@FavoritesActivity, MainActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         startActivity(intent)
@@ -115,10 +120,10 @@ class FavoritesActivity : ComponentActivity() {
             radioNames
         }
 
-    private fun processRadioData(radioResponse: RadioResponse): String {
-        return radioResponse.data.title + ", " +
-                radioResponse.data.country.title + ", " +
-                radioResponse.data.place.title
+    private fun processRadioData(radioDetailsResponse: RadioDetailsResponse): String {
+        return radioDetailsResponse.data.title + ", " +
+                radioDetailsResponse.data.country.title + ", " +
+                radioDetailsResponse.data.place.title
     }
 }
 

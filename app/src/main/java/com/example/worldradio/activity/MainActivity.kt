@@ -1,4 +1,4 @@
-package com.example.worldradio
+package com.example.worldradio.activity
 
 import android.content.ComponentName
 import android.content.Intent
@@ -11,8 +11,13 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import com.example.worldradio.activity.favorites.FavoritesListCache
+import com.example.worldradio.MainApplication
+import com.example.worldradio.R
+import com.example.worldradio.WorldRadioConstants
+import com.example.worldradio.activity.favorites.FavoritesActivity
+import com.example.worldradio.service.RadioPlayerService
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -21,10 +26,6 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
 
     private lateinit var radioNameText: TextView
     private var radioPlayerService: RadioPlayerService? = null
-
-    object RadioIdsHolder {
-        val radioIdsLiveData: MutableLiveData<List<String>> = MutableLiveData()
-    }
 
     private var bound = false
 
@@ -36,15 +37,16 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        MainApplication.SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)
         radioNameText = findViewById(R.id.radioNameText)
         radioPlayerService = (application as MainApplication).getRadioPlayerService()
-        RadioIdsHolder.radioIdsLiveData.observe(this, serviceObserver)
+        MainApplication.SharedDataHolder.radioIdsLiveData.observe(this, serviceObserver)
     }
 
     override fun onStart() {
         super.onStart()
         val cachedRadioIds: List<String> = FavoritesListCache.getFavoritesList(this)
-        RadioIdsHolder.radioIdsLiveData.value = cachedRadioIds
+        MainApplication.SharedDataHolder.radioIdsLiveData.value = cachedRadioIds
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         bindService(serviceIntent, connection, BIND_AUTO_CREATE)
     }
@@ -62,7 +64,7 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
             val binder = service as RadioPlayerService.LocalBinder
             radioPlayerService = binder.getService()
             bound = true
-            radioPlayerService?.setCallback(this@MainActivity)
+            radioPlayerService?.addCallback(this@MainActivity)
         }
 
         override fun onServiceDisconnected(className: ComponentName) {
@@ -92,5 +94,9 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
 
     fun onFavoritesClicked(view: View) {
         startActivity(Intent(this@MainActivity, FavoritesActivity::class.java))
+    }
+
+    fun onRandomRadioClicked(view: View) {
+        startActivity(Intent(this@MainActivity, RandomRadioActivity::class.java))
     }
 }
