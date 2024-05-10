@@ -75,7 +75,7 @@ class RadioPlayerService : Service() {
 
     private lateinit var context: Context
     private val callbacks = mutableListOf<RadioPlayerCallback>()
-    private val notificationId = 123
+    private val notificationId = 555
     private val binder = LocalBinder()
 
     inner class LocalBinder : Binder() {
@@ -379,7 +379,7 @@ class RadioPlayerService : Service() {
 
         val builder = NotificationCompat.Builder(this, "channel_id")
             .setContentTitle("Radio Service")
-            .setContentText("Radio is playing...")
+            .setContentText("Radio is playing :)")
             .setSmallIcon(R.drawable.ic_play)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -387,7 +387,7 @@ class RadioPlayerService : Service() {
             .setOngoing(true)
 
         val intent = packageManager.getLaunchIntentForPackage(packageName)
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE)
         builder.setContentIntent(pendingIntent)
         return builder.build()
     }
@@ -400,6 +400,9 @@ class RadioPlayerService : Service() {
         radioIds.value?.toMutableList()?.let { mutableList ->
             if (position in 0 until mutableList.size) {
                 mutableList.removeAt(position)
+                if(position <= radioPosition){
+                    radioPosition --
+                }
                 radioIds.postValue(mutableList)
                 FavoritesListCache.saveFavoritesList(context, mutableList)
             }

@@ -12,7 +12,6 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.Observer
-import com.example.worldradio.activity.favorites.FavoritesListCache
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
 import com.example.worldradio.WorldRadioConstants
@@ -45,8 +44,6 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
 
     override fun onStart() {
         super.onStart()
-        val cachedRadioIds: List<String> = FavoritesListCache.getFavoritesList(this)
-        MainApplication.SharedDataHolder.radioIdsLiveData.value = cachedRadioIds
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         bindService(serviceIntent, connection, BIND_AUTO_CREATE)
     }
