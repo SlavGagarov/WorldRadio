@@ -42,6 +42,11 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
         MainApplication.SharedDataHolder.radioIdsLiveData.observe(this, serviceObserver)
     }
 
+    override fun onResume() {
+        MainApplication.SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)
+        super.onResume()
+    }
+
     override fun onStart() {
         super.onStart()
         val serviceIntent = Intent(this, RadioPlayerService::class.java)

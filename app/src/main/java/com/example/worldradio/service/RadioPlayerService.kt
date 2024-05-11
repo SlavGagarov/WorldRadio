@@ -34,7 +34,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.example.worldradio.MainApplication
 import com.example.worldradio.MainApplication.SharedDataHolder.mode
-import com.example.worldradio.activity.favorites.FavoritesListCache
+import com.example.worldradio.CacheManager
 import com.example.worldradio.R
 import com.example.worldradio.WorldRadioConstants
 import com.example.worldradio.dto.RadioDetailsResponse
@@ -100,7 +100,7 @@ class RadioPlayerService : Service() {
             GlobalScope.launch(Dispatchers.Main) {
                 val isLoadedSuccessfully = loadRadioIds()
                 if (isLoadedSuccessfully) {
-                    FavoritesListCache.saveFavoritesList(context, radioIds.value ?: emptyList())
+                    CacheManager.saveFavoritesList(context, radioIds.value ?: emptyList())
                     getAudioFocus()
                 } else {
                     Log.e(tag, "Failed to load favorites from cache")
@@ -119,6 +119,10 @@ class RadioPlayerService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(notificationId, createNotification())
         return START_STICKY
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
@@ -147,10 +151,18 @@ class RadioPlayerService : Service() {
     @OptIn(UnstableApi::class)
     private fun initializePlayer() {
         player = ExoPlayer.Builder(context).build()
-        if (radioIds.value?.isNotEmpty() == true) {
-            changeRadio(radioIds.value!![0])
-        } else {
-            Log.w(tag, "radioIds list is empty")
+        currentRadioId = CacheManager.getCurrentRadio(context)
+        if(currentRadioId.isEmpty()) {
+            if (radioIds.value?.isNotEmpty() == true) {
+                changeRadio(radioIds.value!![0])
+            } else {
+                Log.w(tag, "radioIds list is empty")
+            }
+        }
+        else {
+            val positionInFavorites = radioIds.value?.indexOf(currentRadioId) ?: 0
+            radioPosition = positionInFavorites
+            changeRadio(currentRadioId)
         }
     }
 
@@ -231,6 +243,7 @@ class RadioPlayerService : Service() {
         player.playWhenReady = true
         player.prepare()
         fetchRadioById(id)
+        CacheManager.saveCurrentRadio(context, currentRadioId)
     }
 
     fun playNextRadio(){
@@ -404,7 +417,7 @@ class RadioPlayerService : Service() {
                     radioPosition --
                 }
                 radioIds.postValue(mutableList)
-                FavoritesListCache.saveFavoritesList(context, mutableList)
+                CacheManager.saveFavoritesList(context, mutableList)
             }
         }
     }
@@ -414,7 +427,7 @@ class RadioPlayerService : Service() {
             if(!mutableList.contains(currentRadioId)) {
                 mutableList.add(currentRadioId)
                 radioIds.postValue(mutableList)
-                FavoritesListCache.saveFavoritesList(context, mutableList)
+                CacheManager.saveFavoritesList(context, mutableList)
                 Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
             }
         }
