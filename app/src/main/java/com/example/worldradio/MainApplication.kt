@@ -36,6 +36,8 @@ class MainApplication : Application(){
     override fun onCreate() {
         super.onCreate()
         SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)
+        val cachedRadioIds: List<String> = CacheManager.getFavoritesList(this)
+        SharedDataHolder.radioIdsLiveData.value = cachedRadioIds
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         startService(serviceIntent)
         bindService()
@@ -64,8 +66,8 @@ class MainApplication : Application(){
 
     override fun onTerminate() {
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
-        stopService(serviceIntent)
         unbindService(serviceConnection)
+        stopService(serviceIntent)
         super.onTerminate()
     }
 
