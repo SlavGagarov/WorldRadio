@@ -46,6 +46,11 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
         getAllPlaces()
     }
 
+    override fun onResume() {
+        MainApplication.SharedDataHolder.mode.postValue(WorldRadioConstants.RANDOM_MODE)
+        super.onResume()
+    }
+
     fun onNextRadioButtonClicked(view: View) {
         GlobalScope.launch {
             playRandomRadio()

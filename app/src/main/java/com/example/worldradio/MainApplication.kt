@@ -12,7 +12,6 @@ import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
-import com.example.worldradio.activity.favorites.FavoritesListCache
 import com.example.worldradio.service.RadioApiService
 import com.example.worldradio.service.RadioPlayerService
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +36,7 @@ class MainApplication : Application(){
     override fun onCreate() {
         super.onCreate()
         SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)
-        val cachedRadioIds: List<String> = FavoritesListCache.getFavoritesList(this)
+        val cachedRadioIds: List<String> = CacheManager.getFavoritesList(this)
         SharedDataHolder.radioIdsLiveData.value = cachedRadioIds
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         startService(serviceIntent)
@@ -67,8 +66,8 @@ class MainApplication : Application(){
 
     override fun onTerminate() {
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
-        stopService(serviceIntent)
         unbindService(serviceConnection)
+        stopService(serviceIntent)
         super.onTerminate()
     }
 
