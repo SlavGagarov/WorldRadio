@@ -38,6 +38,7 @@ class MainApplication : Application(){
         SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)
         val cachedRadioIds: List<String> = CacheManager.getFavoritesList(this)
         SharedDataHolder.radioIdsLiveData.value = cachedRadioIds
+        SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)
         val serviceIntent = Intent(this, RadioPlayerService::class.java)
         startService(serviceIntent)
         bindService()
