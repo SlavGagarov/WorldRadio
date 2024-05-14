@@ -12,6 +12,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
+import com.example.worldradio.dto.LocationDetails
 import com.example.worldradio.service.RadioApiService
 import com.example.worldradio.service.RadioPlayerService
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,8 @@ class MainApplication : Application(){
     object SharedDataHolder {
         val radioIdsLiveData: MutableLiveData<List<String>> = MutableLiveData()
         val allPlacesIds: MutableLiveData<List<String>> = MutableLiveData()
+        val countryCityMap: MutableLiveData<MutableMap<String, MutableList<LocationDetails>>> =
+            MutableLiveData()
         var mode:  MutableLiveData<String> = MutableLiveData()
     }
 
@@ -124,5 +127,51 @@ class MainApplication : Application(){
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         radioApiService = retrofit.create(RadioApiService::class.java)
+    }
+
+    suspend fun populateCountryCityMap(): Boolean {
+        if (!SharedDataHolder.countryCityMap.value.isNullOrEmpty()) {
+            SharedDataHolder.allPlacesIds.postValue(
+                SharedDataHolder.countryCityMap.value!!.keys.toList()
+            )
+            return true
+        }
+        return withContext(Dispatchers.IO) {
+            val call = radioApiService.getAllPlaces()
+            try {
+                val response = call.execute()
+                if (response.isSuccessful) {
+                    val placeDetailsResponse = response.body()
+                    if (placeDetailsResponse != null) {
+                        val mutableMap = mutableMapOf<String, MutableList<LocationDetails>>()
+                        for (place in placeDetailsResponse.data.list) {
+                            if (mutableMap[place.country].isNullOrEmpty()) {
+                                mutableMap[place.country] = mutableListOf(
+                                    LocationDetails(
+                                        place.country,
+                                        place.title,
+                                        place.id
+                                    )
+                                )
+                            } else {
+                                mutableMap[place.country]!!.add(
+                                    LocationDetails(
+                                        place.country,
+                                        place.title,
+                                        place.id
+                                    )
+                                )
+                            }
+                        }
+                        SharedDataHolder.countryCityMap.postValue(mutableMap)
+                        return@withContext true
+                    }
+                }
+                return@withContext false
+            } catch (e: IOException) {
+                Log.e(tag, "Error when getting place details data", e)
+                false
+            }
+        }
     }
 }

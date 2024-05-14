@@ -83,6 +83,11 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
     }
 
     private fun getAllPlaces() {
+        if (!MainApplication.SharedDataHolder.countryCityMap.value.isNullOrEmpty()) {
+            MainApplication.SharedDataHolder.allPlacesIds.postValue(
+                MainApplication.SharedDataHolder.countryCityMap.value!!.keys.toList())
+            return
+        }
         CoroutineScope(Dispatchers.IO).launch {
             val call = radioApiService.getAllPlaces()
             try {

@@ -22,24 +22,31 @@
         android:theme="@style/Theme.WorldRadio"
         tools:targetApi="31">
         <activity
-            android:name=".activity.RandomRadioActivity"
+            android:name=".activity.explore.ExploreCountriesActivity"
+            android:exported="false"
+            android:label="@string/title_activity_explore_countries"
             android:screenOrientation="portrait"
+            android:theme="@style/Theme.WorldRadio" />
+        <activity
+            android:name=".activity.RandomRadioActivity"
             android:exported="false"
             android:label="@string/title_activity_random_radio"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.WorldRadio" />
         <activity
             android:name=".activity.favorites.FavoritesActivity"
-            android:screenOrientation="portrait"
             android:exported="false"
             android:label="@string/title_activity_favorites"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.WorldRadio" />
         <activity
             android:name=".activity.MainActivity"
-            android:screenOrientation="portrait"
             android:exported="true"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.WorldRadio">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
