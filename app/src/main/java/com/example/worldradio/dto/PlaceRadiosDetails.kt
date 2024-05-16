@@ -22,13 +22,10 @@ data class ResponseDataDetails(
 data class ContentItem(
     @SerializedName("items") val items: List<Item>,
     @SerializedName("itemsType") val itemsType: String,
-    @SerializedName("title") val title: String,
     @SerializedName("type") val type: String
 )
 
 data class Item(
-    @SerializedName("title") val title: String,
-    @SerializedName("href") val href: String,
     @SerializedName("page") val page: Page
 )
 
