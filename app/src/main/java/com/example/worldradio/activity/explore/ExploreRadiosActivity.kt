@@ -46,7 +46,6 @@ class ExploreRadiosActivity : ComponentActivity() {
             dataList.sort()
             setupListView()
         }
-
     }
 
     fun onBackButtonClicked(view: View) {
@@ -57,11 +56,11 @@ class ExploreRadiosActivity : ComponentActivity() {
         finish()
     }
 
-    fun setupListView() {
+    private fun setupListView() {
         filterEditText = findViewById(R.id.filterEditText)
         stringList = findViewById(R.id.stringList)
 
-        adapter = CountriesListAdapter(dataList, WorldRadioConstants.EXPLORE_RADIOS_ACTIVITY)
+        adapter = CountriesListAdapter(dataList, WorldRadioConstants.EXPLORE_RADIOS_ACTIVITY, application as MainApplication)
         stringList.adapter = adapter
         stringList.layoutManager = LinearLayoutManager(this)
 
