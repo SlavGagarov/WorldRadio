@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
@@ -19,10 +20,12 @@ import kotlinx.coroutines.launch
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class CountriesListAdapter(
     private var dataList: List<String>,
-    private val sourceActivity: String
+    private val sourceActivity: String,
+    private val application: MainApplication
 ) : RecyclerView.Adapter<CountriesListAdapter.StringViewHolder>() {
 
     private val tag = "WorldRadio.CountriesListAdapter"
+    private var selectedPosition: Int = RecyclerView.NO_POSITION
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StringViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -32,7 +35,7 @@ class CountriesListAdapter(
 
     override fun onBindViewHolder(holder: StringViewHolder, position: Int) {
         val item = dataList[position]
-        holder.bind(item)
+        holder.bind(item, position)
     }
 
     override fun getItemCount(): Int {
@@ -47,8 +50,16 @@ class CountriesListAdapter(
     inner class StringViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textView: TextView = itemView.findViewById(R.id.textView)
 
-        fun bind(item: String) {
+        fun bind(item: String, position: Int) {
             textView.text = item
+
+            itemView.setBackgroundColor(
+                if (position == selectedPosition)
+                    ContextCompat.getColor(itemView.context, R.color.selected_item)
+                else
+                    ContextCompat.getColor(itemView.context, android.R.color.transparent)
+            )
+
             itemView.setOnClickListener {
                 when(sourceActivity) {
                     WorldRadioConstants.EXPLORE_COUNTRIES_ACTIVITY -> {
@@ -64,7 +75,9 @@ class CountriesListAdapter(
                     }
                     WorldRadioConstants.EXPLORE_RADIOS_ACTIVITY -> {
                         CoroutineScope(Dispatchers.Main).launch {
-
+                            MainApplication.SharedDataHolder.selectedRadioName.postValue(item)
+                            application.playSelectedRadio()
+                            highlightRadio()
                         }
                     }
                     else -> {
@@ -72,6 +85,14 @@ class CountriesListAdapter(
                     }
                 }
             }
+        }
+
+        fun highlightRadio(){
+            val previousPosition = selectedPosition
+            selectedPosition = getBindingAdapterPosition()
+
+            notifyItemChanged(previousPosition)
+            notifyItemChanged(selectedPosition)
         }
     }
 }

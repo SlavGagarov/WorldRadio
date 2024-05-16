@@ -34,8 +34,10 @@ class MainApplication : Application(){
         val allPlacesIds: MutableLiveData<List<String>> = MutableLiveData()
         val countryCityMap: MutableLiveData<MutableMap<String, MutableList<LocationDetails>>> =
             MutableLiveData()
+        val radioNameIdMap: MutableLiveData<MutableMap<String,String>> =  MutableLiveData()
         var mode:  MutableLiveData<String> = MutableLiveData()
         var currentCountry: MutableLiveData<String> = MutableLiveData()
+        var selectedRadioName: MutableLiveData<String> = MutableLiveData()
     }
 
     override fun onCreate() {
@@ -89,10 +91,21 @@ class MainApplication : Application(){
         }
     }
 
+    fun playSelectedRadio(){
+        Handler(Looper.getMainLooper()).post {
+            val radioId = SharedDataHolder.radioNameIdMap.value?.get(SharedDataHolder.selectedRadioName.value)
+            if(radioId != null){
+                radioPlayerService?.playRadioById(radioId)
+            }
+        }
+    }
+
     suspend fun getRandomRadio(): String{
         val randomPlaceId = SharedDataHolder.allPlacesIds.value?.random() ?: ""
-        val radioIds = getRadiosForPlace(randomPlaceId)
-        return radioIds.random()
+        if(getRadiosForPlace(randomPlaceId)){
+            return SharedDataHolder.radioNameIdMap.value?.values?.random() ?: ""
+        }
+        return ""
     }
 
     suspend fun getRadiosForCity(cityName: String): List<String> {
@@ -101,15 +114,15 @@ class MainApplication : Application(){
             cities?.find {
                 it.city == cityName
             }
-        if(cityDetails != null){
-            return getRadiosForPlace(cityDetails.cityId)
+        if(cityDetails != null && getRadiosForPlace(cityDetails.cityId)){
+            return SharedDataHolder.radioNameIdMap.value?.keys?.toList() ?: emptyList()
         }
         return emptyList()
     }
 
-    private suspend fun getRadiosForPlace(placeId:String): List<String> {
+    private suspend fun getRadiosForPlace(placeId:String): Boolean {
         return withContext(Dispatchers.IO) {
-            val radioIds = mutableListOf<String>()
+            val radioMap = HashMap<String, String>()
             try {
                 val call = radioApiService.getPlaceRadios(placeId)
                 val response = call.execute()
@@ -120,14 +133,15 @@ class MainApplication : Application(){
                         for(radio in localRadioItems){
                             val url = radio.page.url
                             val id = url.substringAfterLast("/")
-                            radioIds.add(id)
+                            radioMap[radio.page.title] = id
                         }
                     }
                 }
             } catch (e: IOException) {
                 Log.e(tag, "Error when getting place details data", e)
             }
-            radioIds
+            SharedDataHolder.radioNameIdMap.postValue(radioMap)
+            true
         }
     }
 

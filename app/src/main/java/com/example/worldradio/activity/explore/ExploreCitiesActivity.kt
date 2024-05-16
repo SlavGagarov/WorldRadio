@@ -56,7 +56,7 @@ class ExploreCitiesActivity : ComponentActivity() {
         filterEditText = findViewById(R.id.filterEditText)
         stringList = findViewById(R.id.stringList)
 
-        adapter = CountriesListAdapter(dataList, WorldRadioConstants.EXPLORE_CITIES_ACTIVITY)
+        adapter = CountriesListAdapter(dataList, WorldRadioConstants.EXPLORE_CITIES_ACTIVITY, application as MainApplication)
         stringList.adapter = adapter
         stringList.layoutManager = LinearLayoutManager(this)
 
