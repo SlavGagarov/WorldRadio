@@ -15,9 +15,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
 import com.example.worldradio.WorldRadioConstants
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-class ExploreCitiesActivity : ComponentActivity() {
+class ExploreRadiosActivity : ComponentActivity() {
     private val tag = "WorldRadio.ExploreCitiesActivity"
 
     private lateinit var filterEditText: EditText
@@ -27,26 +30,28 @@ class ExploreCitiesActivity : ComponentActivity() {
 
 
     companion object {
-        const val COUNTRY_NAME = "com.example.worldradio.activity.explore.COUNTRY_NAME"
+        const val CITY_NAME = "com.example.worldradio.activity.explore.CITY_NAME"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_explore_cities)
+        setContentView(R.layout.activity_explore_radios)
 
-        val countryName = intent.getStringExtra(COUNTRY_NAME)
+        val cityName = intent.getStringExtra(CITY_NAME) ?: ""
 
         dataList.clear()
-        val locationDetailsList =
-            MainApplication.SharedDataHolder.countryCityMap.value?.get(countryName) ?: emptyList()
-        dataList.addAll(locationDetailsList.map{it.city})
-        dataList.sort()
-        setupListView()
+        val mainApplication = application as MainApplication
+        CoroutineScope(Dispatchers.Main).launch {
+            dataList = mainApplication.getRadiosForCity(cityName).toMutableList()
+            dataList.sort()
+            setupListView()
+        }
+
     }
 
     fun onBackButtonClicked(view: View) {
         Log.d(tag, "Back Button Clicked Clicked")
-        val intent = Intent(this@ExploreCitiesActivity, ExploreCountriesActivity::class.java)
+        val intent = Intent(this@ExploreRadiosActivity, ExploreCitiesActivity::class.java)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         startActivity(intent)
         finish()
@@ -56,7 +61,7 @@ class ExploreCitiesActivity : ComponentActivity() {
         filterEditText = findViewById(R.id.filterEditText)
         stringList = findViewById(R.id.stringList)
 
-        adapter = CountriesListAdapter(dataList, WorldRadioConstants.EXPLORE_CITIES_ACTIVITY)
+        adapter = CountriesListAdapter(dataList, WorldRadioConstants.EXPLORE_RADIOS_ACTIVITY)
         stringList.adapter = adapter
         stringList.layoutManager = LinearLayoutManager(this)
 

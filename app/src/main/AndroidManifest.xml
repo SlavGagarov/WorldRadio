@@ -22,6 +22,18 @@
         android:theme="@style/Theme.WorldRadio"
         tools:targetApi="31">
         <activity
+            android:name=".activity.explore.ExploreRadiosActivity"
+            android:exported="false"
+            android:label="@string/title_activity_explore_radios"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WorldRadio" />
+        <activity
+            android:name=".activity.explore.ExploreCitiesActivity"
+            android:exported="false"
+            android:label="@string/title_activity_explore_cities"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WorldRadio" />
+        <activity
             android:name=".activity.explore.ExploreCountriesActivity"
             android:exported="false"
             android:label="@string/title_activity_explore_countries"

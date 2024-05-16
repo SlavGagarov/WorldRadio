@@ -18,7 +18,7 @@ interface RadioApiService {
     @GET("ara/content/places")
     fun getAllPlaces(): Call<PlaceDetailsResponse>
 
-    @GET("ara/content/page/{id}")
+    @GET("ara/content/page/{id}/channels")
     fun getPlaceRadios(@Path("id") id: String): Call<PlaceRadiosDetails>
 
 }

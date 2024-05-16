@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
+import com.example.worldradio.WorldRadioConstants
 import com.example.worldradio.activity.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +61,7 @@ class ExploreCountriesActivity : ComponentActivity() {
         filterEditText = findViewById(R.id.filterEditText)
         stringList = findViewById(R.id.stringList)
 
-        adapter = CountriesListAdapter(dataList)
+        adapter = CountriesListAdapter(dataList, WorldRadioConstants.EXPLORE_COUNTRIES_ACTIVITY)
         stringList.adapter = adapter
         stringList.layoutManager = LinearLayoutManager(this)
 

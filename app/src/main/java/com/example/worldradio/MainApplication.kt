@@ -12,6 +12,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
+import com.example.worldradio.activity.explore.ExploreCitiesActivity
 import com.example.worldradio.dto.LocationDetails
 import com.example.worldradio.service.RadioApiService
 import com.example.worldradio.service.RadioPlayerService
@@ -34,6 +35,7 @@ class MainApplication : Application(){
         val countryCityMap: MutableLiveData<MutableMap<String, MutableList<LocationDetails>>> =
             MutableLiveData()
         var mode:  MutableLiveData<String> = MutableLiveData()
+        var currentCountry: MutableLiveData<String> = MutableLiveData()
     }
 
     override fun onCreate() {
@@ -93,6 +95,18 @@ class MainApplication : Application(){
         return radioIds.random()
     }
 
+    suspend fun getRadiosForCity(cityName: String): List<String> {
+        val cities = SharedDataHolder.countryCityMap.value?.get(SharedDataHolder.currentCountry.value)
+        val cityDetails =
+            cities?.find {
+                it.city == cityName
+            }
+        if(cityDetails != null){
+            return getRadiosForPlace(cityDetails.cityId)
+        }
+        return emptyList()
+    }
+
     private suspend fun getRadiosForPlace(placeId:String): List<String> {
         return withContext(Dispatchers.IO) {
             val radioIds = mutableListOf<String>()
@@ -104,13 +118,9 @@ class MainApplication : Application(){
                     if (placeRadiosDetailsResponse != null) {
                         val localRadioItems = placeRadiosDetailsResponse.data.content.first().items
                         for(radio in localRadioItems){
-                            val href = radio.href
-                            if (href != null) {
-                                val id = href.substringAfterLast("/")
-                                radioIds.add(id)
-                            } else {
-                                Log.e(tag, "href is null for radio: $radio")
-                            }
+                            val url = radio.page.url
+                            val id = url.substringAfterLast("/")
+                            radioIds.add(id)
                         }
                     }
                 }
