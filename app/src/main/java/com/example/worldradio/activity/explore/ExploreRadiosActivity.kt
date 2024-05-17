@@ -56,6 +56,12 @@ class ExploreRadiosActivity : ComponentActivity() {
         finish()
     }
 
+    fun onAddToFavoritesClicked(view: View) {
+        Log.d(tag, "Add to favorites Clicked")
+        val application = application as MainApplication
+        application.addCurrentToFavorites()
+    }
+
     private fun setupListView() {
         filterEditText = findViewById(R.id.filterEditText)
         stringList = findViewById(R.id.stringList)

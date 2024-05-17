@@ -87,7 +87,7 @@ class CountriesListAdapter(
             }
         }
 
-        fun highlightRadio(){
+        private fun highlightRadio(){
             val previousPosition = selectedPosition
             selectedPosition = getBindingAdapterPosition()
 
