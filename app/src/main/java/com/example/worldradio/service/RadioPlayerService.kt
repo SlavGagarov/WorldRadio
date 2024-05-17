@@ -283,7 +283,6 @@ class RadioPlayerService : Service() {
     }
 
     fun playRadioById(radioId:String){
-        currentRadioId = previousRadioId
         previousRadioId = currentRadioId
         currentRadioId = radioId
         changeRadio(currentRadioId)

@@ -108,6 +108,10 @@ class MainApplication : Application(){
         return ""
     }
 
+    fun addCurrentToFavorites() {
+        radioPlayerService?.addCurrentFavorite()
+    }
+
     suspend fun getRadiosForCity(cityName: String): List<String> {
         val cities = SharedDataHolder.countryCityMap.value?.get(SharedDataHolder.currentCountry.value)
         val cityDetails =
