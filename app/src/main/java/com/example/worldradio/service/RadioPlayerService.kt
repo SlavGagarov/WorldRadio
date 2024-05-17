@@ -282,6 +282,12 @@ class RadioPlayerService : Service() {
         }
     }
 
+    fun playRadioById(radioId:String){
+        previousRadioId = currentRadioId
+        currentRadioId = radioId
+        changeRadio(currentRadioId)
+    }
+
     private fun fetchRadioById(id: String) {
         val retrofit = Retrofit.Builder()
             .baseUrl(RadioApiService.BASE_URL)

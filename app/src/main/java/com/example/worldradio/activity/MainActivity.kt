@@ -15,6 +15,7 @@ import androidx.lifecycle.Observer
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
 import com.example.worldradio.WorldRadioConstants
+import com.example.worldradio.activity.explore.ExploreCountriesActivity
 import com.example.worldradio.activity.favorites.FavoritesActivity
 import com.example.worldradio.service.RadioPlayerService
 
@@ -100,5 +101,9 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
 
     fun onRandomRadioClicked(view: View) {
         startActivity(Intent(this@MainActivity, RandomRadioActivity::class.java))
+    }
+
+    fun onExploreClicked(view: View) {
+        startActivity(Intent(this@MainActivity, ExploreCountriesActivity::class.java))
     }
 }
