@@ -12,7 +12,6 @@ import android.os.Looper
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
-import com.example.worldradio.activity.explore.ExploreCitiesActivity
 import com.example.worldradio.dto.LocationDetails
 import com.example.worldradio.service.RadioApiService
 import com.example.worldradio.service.RadioPlayerService
@@ -124,7 +123,7 @@ class MainApplication : Application(){
         return emptyList()
     }
 
-    private suspend fun getRadiosForPlace(placeId:String): Boolean {
+    private suspend fun getRadiosForPlace(placeId: String): Boolean {
         return withContext(Dispatchers.IO) {
             val radioMap = HashMap<String, String>()
             try {
@@ -134,18 +133,19 @@ class MainApplication : Application(){
                     val placeRadiosDetailsResponse = response.body()
                     if (placeRadiosDetailsResponse != null) {
                         val localRadioItems = placeRadiosDetailsResponse.data.content.first().items
-                        for(radio in localRadioItems){
+                        for (radio in localRadioItems) {
                             val url = radio.page.url
                             val id = url.substringAfterLast("/")
                             radioMap[radio.page.title] = id
                         }
                     }
+                    SharedDataHolder.radioNameIdMap.postValue(radioMap)
+                    return@withContext true
                 }
             } catch (e: IOException) {
                 Log.e(tag, "Error when getting place details data", e)
             }
-            SharedDataHolder.radioNameIdMap.postValue(radioMap)
-            true
+            return@withContext false
         }
     }
 
@@ -160,7 +160,10 @@ class MainApplication : Application(){
     suspend fun populateCountryCityMap(): Boolean {
         if (!SharedDataHolder.countryCityMap.value.isNullOrEmpty()) {
             SharedDataHolder.allPlacesIds.postValue(
-                SharedDataHolder.countryCityMap.value!!.keys.toList()
+                SharedDataHolder.countryCityMap.value?.values
+                    ?.flatten()
+                    ?.map { it.cityId }
+                    ?: emptyList()
             )
             return true
         }
