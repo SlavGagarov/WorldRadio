@@ -34,6 +34,10 @@ class ExploreCountriesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_explore_countries)
 
+        setupDataList()
+    }
+
+    private fun setupDataList(){
         if(dataList.isEmpty()) {
             val mainApplication = application as MainApplication
             CoroutineScope(Dispatchers.Main).launch {
