@@ -57,7 +57,7 @@ class ExploreCountriesActivity : ComponentActivity() {
         finish()
     }
 
-    fun setupListView() {
+    private fun setupListView() {
         filterEditText = findViewById(R.id.filterEditText)
         stringList = findViewById(R.id.stringList)
 
