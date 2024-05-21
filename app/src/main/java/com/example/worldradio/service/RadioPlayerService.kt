@@ -113,6 +113,7 @@ class RadioPlayerService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder {
+        startForeground(notificationId, createNotification())
         return binder
     }
 
@@ -208,13 +209,12 @@ class RadioPlayerService : Service() {
                     }
 
                     KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
-                    KeyEvent.KEYCODE_MEDIA_PLAY,
+                    KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                        player.play()
+                    }
                     KeyEvent.KEYCODE_MEDIA_PAUSE
                     -> {
-                        if(player.isPlaying)
-                            player.pause()
-                        else
-                            player.play()
+                        player.pause()
                     }
                     else -> {
                         Log.i(tag, "No handler configured for key event: " + event.keyCode)
