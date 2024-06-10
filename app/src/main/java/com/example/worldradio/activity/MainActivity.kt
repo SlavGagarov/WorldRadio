@@ -54,14 +54,6 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
         bindService(serviceIntent, connection, BIND_AUTO_CREATE)
     }
 
-    override fun onStop() {
-        super.onStop()
-        if (bound) {
-            unbindService(connection)
-            bound = false
-        }
-    }
-
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as RadioPlayerService.LocalBinder
