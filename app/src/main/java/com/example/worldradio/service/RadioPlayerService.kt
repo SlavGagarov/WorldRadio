@@ -20,7 +20,6 @@ import android.os.IBinder
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
-import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LiveData
@@ -31,6 +30,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.example.worldradio.MainApplication
 import com.example.worldradio.MainApplication.SharedDataHolder.mode
@@ -44,6 +44,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -51,20 +53,23 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.net.HttpURLConnection
 
-
+@UnstableApi
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@kotlin.OptIn(DelicateCoroutinesApi::class)
+@OptIn(DelicateCoroutinesApi::class)
 
 class RadioPlayerService : Service() {
     private val tag = "WorldRadio.RadioPlayerService"
 
     private lateinit var player: Player
+    private lateinit var preppedPlayer: Player
     private lateinit var mediaSession: MediaSession
 
     private lateinit var audioManager: AudioManager
     private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
     private lateinit var focusRequest: AudioFocusRequest
+    private var preloadedMediaSource: MediaSource? = null
 
     private val radioIds = MutableLiveData<List<String>>(emptyList())
     private var radioPosition = 0
@@ -110,6 +115,9 @@ class RadioPlayerService : Service() {
             radioIds.value = loadedRadioIds
             getAudioFocus()
         }
+        CoroutineScope(Dispatchers.IO).launch {
+            preloadNextRadio()
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -131,6 +139,8 @@ class RadioPlayerService : Service() {
         player.release()
         mediaSession.release()
         audioManager.abandonAudioFocusRequest(focusRequest)
+        preppedPlayer.stop()
+        preppedPlayer.release()
         super.onDestroy()
     }
 
@@ -149,18 +159,17 @@ class RadioPlayerService : Service() {
         }
     }
 
-    @OptIn(UnstableApi::class)
     private fun initializePlayer() {
         player = ExoPlayer.Builder(context).build()
+        preppedPlayer = ExoPlayer.Builder(context).build()
         currentRadioId = CacheManager.getCurrentRadio(context)
-        if(currentRadioId.isEmpty()) {
+        if (currentRadioId.isEmpty()) {
             if (radioIds.value?.isNotEmpty() == true) {
                 changeRadio(radioIds.value!![0])
             } else {
                 Log.w(tag, "radioIds list is empty")
             }
-        }
-        else {
+        } else {
             val positionInFavorites = radioIds.value?.indexOf(currentRadioId) ?: 0
             radioPosition = positionInFavorites
             changeRadio(currentRadioId)
@@ -209,13 +218,16 @@ class RadioPlayerService : Service() {
                     }
 
                     KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
-                    KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                    KeyEvent.KEYCODE_MEDIA_PLAY,
+                    -> {
                         player.play()
                     }
-                    KeyEvent.KEYCODE_MEDIA_PAUSE
+
+                    KeyEvent.KEYCODE_MEDIA_PAUSE,
                     -> {
                         player.pause()
                     }
+
                     else -> {
                         Log.i(tag, "No handler configured for key event: " + event.keyCode)
                     }
@@ -224,8 +236,7 @@ class RadioPlayerService : Service() {
         }
     }
 
-    @OptIn(UnstableApi::class)
-    fun changeRadio(id: String) {
+    private fun changeRadio(id: String) {
         player.stop()
         val audioUrl = "http://radio.garden/api/ara/content/listen/${id}/channel.mp3"
 
@@ -242,15 +253,16 @@ class RadioPlayerService : Service() {
         (player as ExoPlayer).setMediaSource(mediaSource)
         player.playWhenReady = true
         player.prepare()
-        fetchRadioById(id)
+        fetchRadioDetailsById(id)
         CacheManager.saveCurrentRadio(context, currentRadioId)
     }
 
-    fun playNextRadio(){
-        when(mode.value.toString()) {
+    fun playNextRadio() {
+        when (mode.value.toString()) {
             WorldRadioConstants.FAVORITES_MODE -> {
-                nextRadio()
+                nextFavoriteRadio()
             }
+
             WorldRadioConstants.RANDOM_MODE -> {
                 val mainApplication = application as MainApplication
                 CoroutineScope(Dispatchers.Main).launch {
@@ -259,36 +271,39 @@ class RadioPlayerService : Service() {
                     changeRadio(currentRadioId)
                 }
             }
+
             else -> {
                 Log.e(tag, "Unknown mode: $mode")
             }
         }
     }
 
-    fun playPreviousRadio(){
-        when(mode.value.toString()) {
+    fun playPreviousRadio() {
+        when (mode.value.toString()) {
             WorldRadioConstants.FAVORITES_MODE -> {
                 previousRadio()
             }
+
             WorldRadioConstants.RANDOM_MODE -> {
                 val temp = currentRadioId
                 currentRadioId = previousRadioId
                 previousRadioId = temp
                 changeRadio(currentRadioId)
             }
+
             else -> {
                 Log.e(tag, "Unknown mode: $mode")
             }
         }
     }
 
-    fun playRadioById(radioId:String){
+    fun playRadioById(radioId: String) {
         previousRadioId = currentRadioId
         currentRadioId = radioId
         changeRadio(currentRadioId)
     }
 
-    private fun fetchRadioById(id: String) {
+    private fun fetchRadioDetailsById(id: String) {
         val retrofit = Retrofit.Builder()
             .baseUrl(RadioApiService.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
@@ -297,7 +312,10 @@ class RadioPlayerService : Service() {
         val call = radioApiService.getRadio(id)
 
         call.enqueue(object : Callback<RadioDetailsResponse> {
-            override fun onResponse(call: Call<RadioDetailsResponse>, response: Response<RadioDetailsResponse>) {
+            override fun onResponse(
+                call: Call<RadioDetailsResponse>,
+                response: Response<RadioDetailsResponse>,
+            ) {
                 if (response.isSuccessful) {
                     val radioResponse = response.body()
                     if (radioResponse != null) {
@@ -318,7 +336,7 @@ class RadioPlayerService : Service() {
         val place = radioDetailsResponse.data.country.title + ", " +
                 radioDetailsResponse.data.place.title
         val updateText = radioDetailsResponse.data.title + "\n" + place
-        for(callback in callbacks){
+        for (callback in callbacks) {
             callback.onRadioChange(updateText)
         }
 
@@ -368,12 +386,27 @@ class RadioPlayerService : Service() {
         }
     }
 
-    fun nextRadio() {
+    fun nextFavoriteRadio() {
         val radioIdsValue = radioIds.value ?: return
         radioPosition = (radioPosition + 1) % radioIdsValue.size
         previousRadioId = currentRadioId
         currentRadioId = radioIdsValue[radioPosition]
-        changeRadio(radioIdsValue[radioPosition])
+
+
+        preloadedMediaSource?.let {
+            Log.i(tag, "Switching to preloaded next favorite radio")
+            player.pause()
+            val tempPlayer = player
+            player = preppedPlayer
+            preppedPlayer = tempPlayer
+            player.playWhenReady = true
+            player.prepare()
+            CoroutineScope(Dispatchers.IO).launch {
+                preloadNextRadio()
+            }
+        }
+        fetchRadioDetailsById(currentRadioId)
+        CacheManager.saveCurrentRadio(context, currentRadioId)
     }
 
     fun previousRadio() {
@@ -382,6 +415,9 @@ class RadioPlayerService : Service() {
         previousRadioId = currentRadioId
         currentRadioId = radioIdsValue[radioPosition]
         changeRadio(radioIdsValue[radioPosition])
+        CoroutineScope(Dispatchers.IO).launch {
+            preloadNextRadio()
+        }
     }
 
     private fun createNotification(): Notification {
@@ -419,8 +455,8 @@ class RadioPlayerService : Service() {
         radioIds.value?.toMutableList()?.let { mutableList ->
             if (position in 0 until mutableList.size) {
                 mutableList.removeAt(position)
-                if(position <= radioPosition){
-                    radioPosition --
+                if (position <= radioPosition) {
+                    radioPosition--
                 }
                 radioIds.postValue(mutableList)
                 CacheManager.saveFavoritesList(context, mutableList)
@@ -428,14 +464,57 @@ class RadioPlayerService : Service() {
         }
     }
 
-    fun addCurrentFavorite(){
+    fun addCurrentFavorite() {
         radioIds.value?.toMutableList()?.let { mutableList ->
-            if(!mutableList.contains(currentRadioId)) {
+            if (!mutableList.contains(currentRadioId)) {
                 mutableList.add(currentRadioId)
                 radioIds.postValue(mutableList)
                 CacheManager.saveFavoritesList(context, mutableList)
                 Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private suspend fun preloadNextRadio() {
+        val radioIdsValue = radioIds.value ?: return
+        val nextRadioPosition = (radioPosition + 1) % radioIdsValue.size
+        val nextRadioId = radioIdsValue[nextRadioPosition]
+
+        val streamUrl = "http://radio.garden/api/ara/content/listen/${nextRadioId}/channel.mp3"
+        val redirectedUrl = fetchRedirectedUrl(streamUrl)
+
+        val dataSourceFactory = DefaultHttpDataSource.Factory()
+            .setAllowCrossProtocolRedirects(true)
+
+        val mediaItem = MediaItem.Builder()
+            .setUri(redirectedUrl)
+            .build()
+        val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
+            .createMediaSource(mediaItem)
+
+        withContext(Dispatchers.Main) {
+            preloadedMediaSource = mediaSource
+            (preppedPlayer as ExoPlayer).setMediaSource(mediaSource)
+        }
+
+    }
+
+    private fun fetchRedirectedUrl(url: String): String {
+        val client = OkHttpClient()
+        val request = Request.Builder().url(url).build()
+        val response = client.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            return url
+        }
+
+        val responseCode = response.code()
+        if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+            val locationHeader = response.header("Location")
+            if (locationHeader != null) {
+                return locationHeader
+            }
+        }
+        return url
     }
 }
