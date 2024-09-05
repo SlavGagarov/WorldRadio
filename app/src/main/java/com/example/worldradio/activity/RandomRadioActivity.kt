@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
+import androidx.media3.common.util.UnstableApi
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
 import com.example.worldradio.WorldRadioConstants
@@ -25,6 +26,7 @@ import java.io.IOException
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(DelicateCoroutinesApi::class)
+@androidx.annotation.OptIn(UnstableApi::class)
 
 class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback {
     private val tag = "WorldRadio.RandomRadioActivity"
@@ -116,7 +118,7 @@ class RandomRadioActivity : ComponentActivity(), RadioPlayerService.RadioPlayerC
         }
     }
 
-    private fun playRandomRadio(){
+    private fun playRandomRadio() {
         val mainApplication = application as MainApplication
         CoroutineScope(Dispatchers.Main).launch {
             mainApplication.playNextRadio()

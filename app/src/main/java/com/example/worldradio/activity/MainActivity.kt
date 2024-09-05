@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.Observer
+import androidx.media3.common.util.UnstableApi
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
 import com.example.worldradio.WorldRadioConstants
@@ -20,6 +21,7 @@ import com.example.worldradio.activity.favorites.FavoritesActivity
 import com.example.worldradio.service.RadioPlayerService
 
 
+@UnstableApi
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback {
     private val tag = "WorldRadio.MainActivity"
@@ -80,7 +82,7 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
     }
 
     fun onNextRadioButtonClicked(view: View) {
-        radioPlayerService?.nextRadio()
+        radioPlayerService?.nextFavoriteRadio()
     }
 
     fun onPreviousRadioButtonClicked(view: View) {

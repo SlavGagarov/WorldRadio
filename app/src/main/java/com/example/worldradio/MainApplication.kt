@@ -10,8 +10,10 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
+import androidx.media3.common.util.UnstableApi
 import com.example.worldradio.dto.LocationDetails
 import com.example.worldradio.service.RadioApiService
 import com.example.worldradio.service.RadioPlayerService
@@ -22,7 +24,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-class MainApplication : Application(){
+@OptIn(UnstableApi::class)
+
+class MainApplication : Application() {
     private val tag = "WorldRadio.MainApplication"
 
     private var radioPlayerService: RadioPlayerService? = null
@@ -33,8 +37,8 @@ class MainApplication : Application(){
         val allPlacesIds: MutableLiveData<List<String>> = MutableLiveData()
         val countryCityMap: MutableLiveData<MutableMap<String, MutableList<LocationDetails>>> =
             MutableLiveData()
-        val radioNameIdMap: MutableLiveData<MutableMap<String,String>> =  MutableLiveData()
-        var mode:  MutableLiveData<String> = MutableLiveData()
+        val radioNameIdMap: MutableLiveData<MutableMap<String, String>> = MutableLiveData()
+        var mode: MutableLiveData<String> = MutableLiveData()
         var currentCountry: MutableLiveData<String> = MutableLiveData()
         var selectedRadioName: MutableLiveData<String> = MutableLiveData()
     }
@@ -76,30 +80,31 @@ class MainApplication : Application(){
         super.onTerminate()
     }
 
-    fun playNextRadio(){
+    fun playNextRadio() {
         Handler(Looper.getMainLooper()).post {
             radioPlayerService?.playNextRadio()
         }
     }
 
-    fun playPreviousRadio(){
+    fun playPreviousRadio() {
         Handler(Looper.getMainLooper()).post {
             radioPlayerService?.playPreviousRadio()
         }
     }
 
-    fun playSelectedRadio(){
+    fun playSelectedRadio() {
         Handler(Looper.getMainLooper()).post {
-            val radioId = SharedDataHolder.radioNameIdMap.value?.get(SharedDataHolder.selectedRadioName.value)
-            if(radioId != null){
+            val radioId =
+                SharedDataHolder.radioNameIdMap.value?.get(SharedDataHolder.selectedRadioName.value)
+            if (radioId != null) {
                 radioPlayerService?.playRadioById(radioId)
             }
         }
     }
 
-    suspend fun getRandomRadio(): String{
+    suspend fun getRandomRadio(): String {
         val randomPlaceId = SharedDataHolder.allPlacesIds.value?.random() ?: ""
-        if(getRadiosForPlace(randomPlaceId)){
+        if (getRadiosForPlace(randomPlaceId)) {
             return SharedDataHolder.radioNameIdMap.value?.values?.random() ?: ""
         }
         return ""
@@ -110,12 +115,13 @@ class MainApplication : Application(){
     }
 
     suspend fun getRadiosForCity(cityName: String): List<String> {
-        val cities = SharedDataHolder.countryCityMap.value?.get(SharedDataHolder.currentCountry.value)
+        val cities =
+            SharedDataHolder.countryCityMap.value?.get(SharedDataHolder.currentCountry.value)
         val cityDetails =
             cities?.find {
                 it.city == cityName
             }
-        if(cityDetails != null && getRadiosForPlace(cityDetails.cityId)){
+        if (cityDetails != null && getRadiosForPlace(cityDetails.cityId)) {
             return SharedDataHolder.radioNameIdMap.value?.keys?.toList() ?: emptyList()
         }
         return emptyList()
