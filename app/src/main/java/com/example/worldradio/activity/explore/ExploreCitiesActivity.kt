@@ -44,6 +44,7 @@ class ExploreCitiesActivity : ComponentActivity() {
         setupListView()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onBackButtonClicked(view: View) {
         Log.d(tag, "Back Button Clicked Clicked")
         val intent = Intent(this@ExploreCitiesActivity, ExploreCountriesActivity::class.java)

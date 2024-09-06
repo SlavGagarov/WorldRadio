@@ -81,22 +81,27 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onNextRadioButtonClicked(view: View) {
-        radioPlayerService?.nextFavoriteRadio()
+        radioPlayerService?.playNextRadio()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onPreviousRadioButtonClicked(view: View) {
-        radioPlayerService?.previousRadio()
+        radioPlayerService?.playPreviousRadio()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onFavoritesClicked(view: View) {
         startActivity(Intent(this@MainActivity, FavoritesActivity::class.java))
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onRandomRadioClicked(view: View) {
         startActivity(Intent(this@MainActivity, RandomRadioActivity::class.java))
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onExploreClicked(view: View) {
         startActivity(Intent(this@MainActivity, ExploreCountriesActivity::class.java))
     }
