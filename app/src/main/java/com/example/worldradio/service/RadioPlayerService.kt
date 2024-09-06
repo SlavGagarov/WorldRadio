@@ -115,9 +115,6 @@ class RadioPlayerService : Service() {
             radioIds.value = loadedRadioIds
             getAudioFocus()
         }
-        CoroutineScope(Dispatchers.IO).launch {
-            preloadNextRadio()
-        }
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -166,6 +163,14 @@ class RadioPlayerService : Service() {
         if (currentRadioId.isEmpty()) {
             if (radioIds.value?.isNotEmpty() == true) {
                 changeRadio(radioIds.value!![0])
+                CoroutineScope(Dispatchers.IO).launch {
+                    if(radioIds.value!!.size > 1){
+                        preloadNextRadio(radioIds.value!![1])
+                    }
+                    else {
+                        preloadNextRadio(radioIds.value!![0])
+                    }
+                }
             } else {
                 Log.w(tag, "radioIds list is empty")
             }
@@ -173,6 +178,14 @@ class RadioPlayerService : Service() {
             val positionInFavorites = radioIds.value?.indexOf(currentRadioId) ?: 0
             radioPosition = positionInFavorites
             changeRadio(currentRadioId)
+            CoroutineScope(Dispatchers.IO).launch {
+                if(radioIds.value!!.size > 1){
+                    preloadNextRadio(radioIds.value!![(positionInFavorites + 1) % radioIds.value!!.size])
+                }
+                else {
+                    preloadNextRadio(radioIds.value!![0])
+                }
+            }
         }
     }
 
@@ -264,12 +277,7 @@ class RadioPlayerService : Service() {
             }
 
             WorldRadioConstants.RANDOM_MODE -> {
-                val mainApplication = application as MainApplication
-                CoroutineScope(Dispatchers.Main).launch {
-                    previousRadioId = currentRadioId
-                    currentRadioId = mainApplication.getRandomRadio()
-                    changeRadio(currentRadioId)
-                }
+                nextRandomRadio()
             }
 
             else -> {
@@ -281,7 +289,7 @@ class RadioPlayerService : Service() {
     fun playPreviousRadio() {
         when (mode.value.toString()) {
             WorldRadioConstants.FAVORITES_MODE -> {
-                previousRadio()
+                previousFavoriteRadio()
             }
 
             WorldRadioConstants.RANDOM_MODE -> {
@@ -386,9 +394,10 @@ class RadioPlayerService : Service() {
         }
     }
 
-    fun nextFavoriteRadio() {
+    private fun nextFavoriteRadio() {
         val radioIdsValue = radioIds.value ?: return
         radioPosition = (radioPosition + 1) % radioIdsValue.size
+        val nextRadioPosition = (radioPosition + 1) % radioIdsValue.size
         previousRadioId = currentRadioId
         currentRadioId = radioIdsValue[radioPosition]
 
@@ -402,21 +411,47 @@ class RadioPlayerService : Service() {
             player.playWhenReady = true
             player.prepare()
             CoroutineScope(Dispatchers.IO).launch {
-                preloadNextRadio()
+                preloadNextRadio(radioIdsValue[nextRadioPosition])
             }
         }
         fetchRadioDetailsById(currentRadioId)
         CacheManager.saveCurrentRadio(context, currentRadioId)
     }
 
-    fun previousRadio() {
+    private fun nextRandomRadio() {
+        val mainApplication = application as MainApplication
+        CoroutineScope(Dispatchers.Main).launch {
+            previousRadioId = currentRadioId
+            currentRadioId = mainApplication.getRandomRadio()
+            val nextRadioId = mainApplication.getRandomRadio()
+
+            preloadedMediaSource?.let {
+                Log.i(tag, "Switching to preloaded next random radio")
+                player.pause()
+                val tempPlayer = player
+                player = preppedPlayer
+                preppedPlayer = tempPlayer
+                player.playWhenReady = true
+                player.prepare()
+                CoroutineScope(Dispatchers.IO).launch {
+                    preloadNextRadio(nextRadioId)
+                }
+            }
+            fetchRadioDetailsById(currentRadioId)
+            CacheManager.saveCurrentRadio(context, currentRadioId)
+        }
+    }
+
+    private fun previousFavoriteRadio() {
         val radioIdsValue = radioIds.value ?: return
         radioPosition = (radioPosition - 1 + radioIdsValue.size) % radioIdsValue.size
+        val nextRadioPosition = (radioPosition + 1) % radioIdsValue.size
         previousRadioId = currentRadioId
         currentRadioId = radioIdsValue[radioPosition]
+
         changeRadio(radioIdsValue[radioPosition])
         CoroutineScope(Dispatchers.IO).launch {
-            preloadNextRadio()
+            preloadNextRadio(radioIdsValue[nextRadioPosition])
         }
     }
 
@@ -475,17 +510,12 @@ class RadioPlayerService : Service() {
         }
     }
 
-    private suspend fun preloadNextRadio() {
-        val radioIdsValue = radioIds.value ?: return
-        val nextRadioPosition = (radioPosition + 1) % radioIdsValue.size
-        val nextRadioId = radioIdsValue[nextRadioPosition]
-
+    private suspend fun preloadNextRadio(nextRadioId: String) {
         val streamUrl = "http://radio.garden/api/ara/content/listen/${nextRadioId}/channel.mp3"
         val redirectedUrl = fetchRedirectedUrl(streamUrl)
 
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
-
         val mediaItem = MediaItem.Builder()
             .setUri(redirectedUrl)
             .build()
@@ -495,24 +525,21 @@ class RadioPlayerService : Service() {
         withContext(Dispatchers.Main) {
             preloadedMediaSource = mediaSource
             (preppedPlayer as ExoPlayer).setMediaSource(mediaSource)
+            Log.i(tag, "Preloaded next radio")
         }
-
     }
 
     private fun fetchRedirectedUrl(url: String): String {
         val client = OkHttpClient()
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            return url
-        }
-
-        val responseCode = response.code()
-        if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
-            val locationHeader = response.header("Location")
-            if (locationHeader != null) {
-                return locationHeader
+        if (response.isSuccessful) {
+            val responseCode = response.code()
+            if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                val locationHeader = response.header("Location")
+                if (locationHeader != null) {
+                    return locationHeader
+                }
             }
         }
         return url

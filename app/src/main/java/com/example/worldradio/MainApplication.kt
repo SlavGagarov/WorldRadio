@@ -45,7 +45,6 @@ class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)
         val cachedRadioIds: List<String> = CacheManager.getFavoritesList(this)
         SharedDataHolder.radioIdsLiveData.value = cachedRadioIds
         SharedDataHolder.mode.postValue(WorldRadioConstants.FAVORITES_MODE)

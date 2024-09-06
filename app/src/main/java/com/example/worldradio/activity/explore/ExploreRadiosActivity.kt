@@ -48,6 +48,7 @@ class ExploreRadiosActivity : ComponentActivity() {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onBackButtonClicked(view: View) {
         Log.d(tag, "Back Button Clicked Clicked")
         val intent = Intent(this@ExploreRadiosActivity, ExploreCitiesActivity::class.java)
@@ -56,6 +57,7 @@ class ExploreRadiosActivity : ComponentActivity() {
         finish()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onAddToFavoritesClicked(view: View) {
         Log.d(tag, "Add to favorites Clicked")
         val application = application as MainApplication
