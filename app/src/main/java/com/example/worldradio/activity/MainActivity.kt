@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.Observer
+import androidx.media3.common.util.UnstableApi
 import com.example.worldradio.MainApplication
 import com.example.worldradio.R
 import com.example.worldradio.WorldRadioConstants
@@ -20,6 +21,7 @@ import com.example.worldradio.activity.favorites.FavoritesActivity
 import com.example.worldradio.service.RadioPlayerService
 
 
+@UnstableApi
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback {
     private val tag = "WorldRadio.MainActivity"
@@ -79,22 +81,27 @@ class MainActivity : ComponentActivity(), RadioPlayerService.RadioPlayerCallback
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onNextRadioButtonClicked(view: View) {
-        radioPlayerService?.nextRadio()
+        radioPlayerService?.playNextRadio()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onPreviousRadioButtonClicked(view: View) {
-        radioPlayerService?.previousRadio()
+        radioPlayerService?.playPreviousRadio()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onFavoritesClicked(view: View) {
         startActivity(Intent(this@MainActivity, FavoritesActivity::class.java))
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onRandomRadioClicked(view: View) {
         startActivity(Intent(this@MainActivity, RandomRadioActivity::class.java))
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onExploreClicked(view: View) {
         startActivity(Intent(this@MainActivity, ExploreCountriesActivity::class.java))
     }

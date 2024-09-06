@@ -1,15 +1,18 @@
 package com.example.worldradio.activity.favorites
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.activity.ComponentActivity
+import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
+import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.worldradio.MainApplication
@@ -29,6 +32,8 @@ import java.io.IOException
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@OptIn(UnstableApi::class)
+
 class FavoritesActivity : ComponentActivity() {
     private val tag = "WorldRadio.FavoritesActivity"
 
@@ -37,6 +42,7 @@ class FavoritesActivity : ComponentActivity() {
     private val itemList = mutableListOf<String>()
     private var radioIdsLiveData: LiveData<List<String>>? = null
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_favorite)
@@ -75,6 +81,8 @@ class FavoritesActivity : ComponentActivity() {
         })
     }
 
+
+    @Suppress("UNUSED_PARAMETER")
     fun onBackButtonClicked(view: View) {
         Log.d(tag, "Back Button Clicked Clicked")
         val intent = Intent(this@FavoritesActivity, MainActivity::class.java)

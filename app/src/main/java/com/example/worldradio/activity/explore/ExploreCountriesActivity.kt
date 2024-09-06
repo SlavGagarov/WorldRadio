@@ -9,7 +9,9 @@ import android.util.Log
 import android.view.View
 import android.widget.EditText
 import androidx.activity.ComponentActivity
+import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
+import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.worldradio.MainApplication
@@ -21,6 +23,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@OptIn(UnstableApi::class)
+
 class ExploreCountriesActivity : ComponentActivity() {
     private val tag = "WorldRadio.ExploreCountriesActivity"
 
@@ -53,6 +57,7 @@ class ExploreCountriesActivity : ComponentActivity() {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun onBackButtonClicked(view: View) {
         Log.d(tag, "Back Button Clicked Clicked")
         val intent = Intent(this@ExploreCountriesActivity, MainActivity::class.java)
