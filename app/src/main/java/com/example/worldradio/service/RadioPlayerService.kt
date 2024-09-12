@@ -164,10 +164,9 @@ class RadioPlayerService : Service() {
             if (radioIds.value?.isNotEmpty() == true) {
                 changeRadio(radioIds.value!![0])
                 CoroutineScope(Dispatchers.IO).launch {
-                    if(radioIds.value!!.size > 1){
+                    if (radioIds.value!!.size > 1) {
                         preloadNextRadio(radioIds.value!![1])
-                    }
-                    else {
+                    } else {
                         preloadNextRadio(radioIds.value!![0])
                     }
                 }
@@ -179,10 +178,9 @@ class RadioPlayerService : Service() {
             radioPosition = positionInFavorites
             changeRadio(currentRadioId)
             CoroutineScope(Dispatchers.IO).launch {
-                if(radioIds.value!!.size > 1){
+                if (radioIds.value!!.size > 1) {
                     preloadNextRadio(radioIds.value!![(positionInFavorites + 1) % radioIds.value!!.size])
-                }
-                else {
+                } else {
                     preloadNextRadio(radioIds.value!![0])
                 }
             }
@@ -530,18 +528,23 @@ class RadioPlayerService : Service() {
     }
 
     private fun fetchRedirectedUrl(url: String): String {
-        val client = OkHttpClient()
-        val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
-        if (response.isSuccessful) {
-            val responseCode = response.code()
-            if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
-                val locationHeader = response.header("Location")
-                if (locationHeader != null) {
-                    return locationHeader
+        try {
+            val client = OkHttpClient()
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val responseCode = response.code()
+                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                    val locationHeader = response.header("Location")
+                    if (locationHeader != null) {
+                        return locationHeader
+                    }
                 }
             }
+            return url
+        } catch (exception: Exception) {
+            Log.e(tag, "Error fetching redirected URL: ${exception.message}")
+            return url
         }
-        return url
     }
 }
