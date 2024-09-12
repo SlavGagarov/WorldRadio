@@ -530,18 +530,24 @@ class RadioPlayerService : Service() {
     }
 
     private fun fetchRedirectedUrl(url: String): String {
-        val client = OkHttpClient()
-        val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
-        if (response.isSuccessful) {
-            val responseCode = response.code()
-            if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
-                val locationHeader = response.header("Location")
-                if (locationHeader != null) {
-                    return locationHeader
+        try {
+            val client = OkHttpClient()
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val responseCode = response.code()
+                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                    val locationHeader = response.header("Location")
+                    if (locationHeader != null) {
+                        return locationHeader
+                    }
                 }
             }
+            return url
         }
-        return url
+        catch (exception : Exception){
+            Log.e(tag, "Error fetching redirected URL: ${exception.message}")
+            return url
+        }
     }
 }
