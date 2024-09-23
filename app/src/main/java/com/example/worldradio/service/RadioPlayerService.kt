@@ -218,7 +218,7 @@ class RadioPlayerService : Service() {
         if (Intent.ACTION_MEDIA_BUTTON == intentAction) {
             val event =
                 mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-            if (event != null) {
+            if (event != null && event.action == KeyEvent.ACTION_DOWN) {
                 when (event.keyCode) {
                     KeyEvent.KEYCODE_MEDIA_NEXT -> {
                         playNextRadio()
@@ -230,13 +230,13 @@ class RadioPlayerService : Service() {
 
                     KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
                     KeyEvent.KEYCODE_MEDIA_PLAY,
-                    -> {
-                        player.play()
-                    }
-
                     KeyEvent.KEYCODE_MEDIA_PAUSE,
                     -> {
-                        player.pause()
+                        if (player.isPlaying) {
+                            player.pause()
+                        } else {
+                            player.play()
+                        }
                     }
 
                     else -> {
