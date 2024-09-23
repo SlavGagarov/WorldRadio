@@ -163,13 +163,12 @@ class RadioPlayerService : Service() {
         if (currentRadioId.isEmpty()) {
             if (radioIds.value?.isNotEmpty() == true) {
                 changeRadio(radioIds.value!![0])
-                CoroutineScope(Dispatchers.IO).launch {
                     if (radioIds.value!!.size > 1) {
                         preloadNextRadio(radioIds.value!![1])
                     } else {
                         preloadNextRadio(radioIds.value!![0])
                     }
-                }
+
             } else {
                 Log.w(tag, "radioIds list is empty")
             }
@@ -177,13 +176,11 @@ class RadioPlayerService : Service() {
             val positionInFavorites = radioIds.value?.indexOf(currentRadioId) ?: 0
             radioPosition = positionInFavorites
             changeRadio(currentRadioId)
-            CoroutineScope(Dispatchers.IO).launch {
                 if (radioIds.value!!.size > 1) {
                     preloadNextRadio(radioIds.value!![(positionInFavorites + 1) % radioIds.value!!.size])
                 } else {
                     preloadNextRadio(radioIds.value!![0])
                 }
-            }
         }
     }
 
@@ -408,9 +405,9 @@ class RadioPlayerService : Service() {
             preppedPlayer = tempPlayer
             player.playWhenReady = true
             player.prepare()
-            CoroutineScope(Dispatchers.IO).launch {
+            //CoroutineScope(Dispatchers.IO).launch {
                 preloadNextRadio(radioIdsValue[nextRadioPosition])
-            }
+            //}
         }
         fetchRadioDetailsById(currentRadioId)
         CacheManager.saveCurrentRadio(context, currentRadioId)
@@ -431,9 +428,7 @@ class RadioPlayerService : Service() {
                 preppedPlayer = tempPlayer
                 player.playWhenReady = true
                 player.prepare()
-                CoroutineScope(Dispatchers.IO).launch {
                     preloadNextRadio(nextRadioId)
-                }
             }
             fetchRadioDetailsById(currentRadioId)
             CacheManager.saveCurrentRadio(context, currentRadioId)
@@ -448,9 +443,7 @@ class RadioPlayerService : Service() {
         currentRadioId = radioIdsValue[radioPosition]
 
         changeRadio(radioIdsValue[radioPosition])
-        CoroutineScope(Dispatchers.IO).launch {
             preloadNextRadio(radioIdsValue[nextRadioPosition])
-        }
     }
 
     private fun createNotification(): Notification {
@@ -508,7 +501,7 @@ class RadioPlayerService : Service() {
         }
     }
 
-    private suspend fun preloadNextRadio(nextRadioId: String) {
+    private fun preloadNextRadio(nextRadioId: String) {
         val streamUrl = "http://radio.garden/api/ara/content/listen/${nextRadioId}/channel.mp3"
         val redirectedUrl = fetchRedirectedUrl(streamUrl)
 
@@ -520,11 +513,9 @@ class RadioPlayerService : Service() {
         val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(mediaItem)
 
-        withContext(Dispatchers.Main) {
             preloadedMediaSource = mediaSource
             (preppedPlayer as ExoPlayer).setMediaSource(mediaSource)
             Log.i(tag, "Preloaded next radio")
-        }
     }
 
     private fun fetchRedirectedUrl(url: String): String {
