@@ -163,11 +163,11 @@ class RadioPlayerService : Service() {
         if (currentRadioId.isEmpty()) {
             if (radioIds.value?.isNotEmpty() == true) {
                 changeRadio(radioIds.value!![0])
-                    if (radioIds.value!!.size > 1) {
-                        preloadNextRadio(radioIds.value!![1])
-                    } else {
-                        preloadNextRadio(radioIds.value!![0])
-                    }
+                if (radioIds.value!!.size > 1) {
+                    preloadNextRadio(radioIds.value!![1])
+                } else {
+                    preloadNextRadio(radioIds.value!![0])
+                }
 
             } else {
                 Log.w(tag, "radioIds list is empty")
@@ -176,11 +176,11 @@ class RadioPlayerService : Service() {
             val positionInFavorites = radioIds.value?.indexOf(currentRadioId) ?: 0
             radioPosition = positionInFavorites
             changeRadio(currentRadioId)
-                if (radioIds.value!!.size > 1) {
-                    preloadNextRadio(radioIds.value!![(positionInFavorites + 1) % radioIds.value!!.size])
-                } else {
-                    preloadNextRadio(radioIds.value!![0])
-                }
+            if (radioIds.value!!.size > 1) {
+                preloadNextRadio(radioIds.value!![(positionInFavorites + 1) % radioIds.value!!.size])
+            } else {
+                preloadNextRadio(radioIds.value!![0])
+            }
         }
     }
 
@@ -405,9 +405,7 @@ class RadioPlayerService : Service() {
             preppedPlayer = tempPlayer
             player.playWhenReady = true
             player.prepare()
-            //CoroutineScope(Dispatchers.IO).launch {
-                preloadNextRadio(radioIdsValue[nextRadioPosition])
-            //}
+            preloadNextRadio(radioIdsValue[nextRadioPosition])
         }
         fetchRadioDetailsById(currentRadioId)
         CacheManager.saveCurrentRadio(context, currentRadioId)
@@ -428,7 +426,7 @@ class RadioPlayerService : Service() {
                 preppedPlayer = tempPlayer
                 player.playWhenReady = true
                 player.prepare()
-                    preloadNextRadio(nextRadioId)
+                preloadNextRadio(nextRadioId)
             }
             fetchRadioDetailsById(currentRadioId)
             CacheManager.saveCurrentRadio(context, currentRadioId)
@@ -443,7 +441,7 @@ class RadioPlayerService : Service() {
         currentRadioId = radioIdsValue[radioPosition]
 
         changeRadio(radioIdsValue[radioPosition])
-            preloadNextRadio(radioIdsValue[nextRadioPosition])
+        preloadNextRadio(radioIdsValue[nextRadioPosition])
     }
 
     private fun createNotification(): Notification {
@@ -513,9 +511,9 @@ class RadioPlayerService : Service() {
         val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(mediaItem)
 
-            preloadedMediaSource = mediaSource
-            (preppedPlayer as ExoPlayer).setMediaSource(mediaSource)
-            Log.i(tag, "Preloaded next radio")
+        preloadedMediaSource = mediaSource
+        (preppedPlayer as ExoPlayer).setMediaSource(mediaSource)
+        Log.i(tag, "Preloaded next radio")
     }
 
     private fun fetchRedirectedUrl(url: String): String {
