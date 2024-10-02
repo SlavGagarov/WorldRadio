@@ -75,6 +75,7 @@ class RadioPlayerService : Service() {
     private var radioPosition = 0
     private var currentRadioId = ""
     private var previousRadioId = ""
+    private var nextRandomRadioId = ""
     private val ignoreInterval: Long = 500
     private var lastEventTime: Long = 0
 
@@ -415,8 +416,14 @@ class RadioPlayerService : Service() {
         val mainApplication = application as MainApplication
         CoroutineScope(Dispatchers.Main).launch {
             previousRadioId = currentRadioId
-            currentRadioId = mainApplication.getRandomRadio()
-            val nextRadioId = mainApplication.getRandomRadio()
+            if (nextRandomRadioId.isEmpty()) {
+                currentRadioId = mainApplication.getRandomRadio()
+                preloadNextRadio(currentRadioId)
+            }
+            else {
+                currentRadioId = nextRandomRadioId
+            }
+            nextRandomRadioId = mainApplication.getRandomRadio()
 
             preloadedMediaSource?.let {
                 Log.i(tag, "Switching to preloaded next random radio")
@@ -426,7 +433,7 @@ class RadioPlayerService : Service() {
                 preppedPlayer = tempPlayer
                 player.playWhenReady = true
                 player.prepare()
-                preloadNextRadio(nextRadioId)
+                preloadNextRadio(nextRandomRadioId)
             }
             fetchRadioDetailsById(currentRadioId)
             CacheManager.saveCurrentRadio(context, currentRadioId)
