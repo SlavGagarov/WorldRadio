@@ -17,6 +17,7 @@ import android.media.session.PlaybackState
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
@@ -125,6 +126,7 @@ class RadioPlayerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(notificationId, createNotification())
+        intent?.action?.let { handleNotificationAction(it) }
         return START_STICKY
     }
 
@@ -209,7 +211,6 @@ class RadioPlayerService : Service() {
         mediaSession.isActive = true
     }
 
-
     private fun handleMediaEvent(mediaButtonIntent: Intent) {
         Log.d(tag, "onMediaButtonEvent triggered")
         val intentAction = mediaButtonIntent.action
@@ -230,11 +231,7 @@ class RadioPlayerService : Service() {
                     KeyEvent.KEYCODE_MEDIA_PLAY,
                     KeyEvent.KEYCODE_MEDIA_PAUSE,
                     -> {
-                        if (player.isPlaying) {
-                            player.pause()
-                        } else {
-                            player.play()
-                        }
+                        pausePlayRadio()
                     }
 
                     else -> {
@@ -242,6 +239,14 @@ class RadioPlayerService : Service() {
                     }
                 }
             }
+        }
+    }
+
+    private fun pausePlayRadio(){
+        if (player.isPlaying) {
+            player.pause()
+        } else {
+            player.play()
         }
     }
 
@@ -457,24 +462,64 @@ class RadioPlayerService : Service() {
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = NotificationChannel(
                 "channel_id",
-                "Channel Name",
+                "Music Playback",
                 NotificationManager.IMPORTANCE_LOW
             )
             notificationManager.createNotificationChannel(channel)
         }
 
+        val controller = mediaSession.controller
+        val playbackState = controller.playbackState
+
+        val playIntent = Intent(this, NotificationActionReceiver::class.java).apply {
+            action = if (playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
+                "ACTION_PAUSE"
+            } else {
+                "ACTION_PLAY"
+            }
+        }
+        val playPendingIntent = PendingIntent.getBroadcast(
+            this, 0, playIntent, PendingIntent.FLAG_MUTABLE
+        )
+
+        val nextIntent = Intent(this, NotificationActionReceiver::class.java).apply {
+            action = "ACTION_NEXT"
+        }
+        val nextPendingIntent = PendingIntent.getBroadcast(
+            this, 1, nextIntent, PendingIntent.FLAG_MUTABLE
+        )
+
+        val previousIntent = Intent(this, NotificationActionReceiver::class.java).apply {
+            action = "ACTION_PREVIOUS"
+        }
+        val previousPendingIntent = PendingIntent.getBroadcast(
+            this, 2, previousIntent, PendingIntent.FLAG_MUTABLE
+        )
+
+        val playPauseIcon = if (playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
+            R.drawable.ic_play_symbol
+        } else {
+            R.drawable.ic_pause
+        }
+
         val builder = NotificationCompat.Builder(this, "channel_id")
-            .setContentTitle("Radio Service")
-            .setContentText("Radio is playing :)")
             .setSmallIcon(R.drawable.ic_play)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOnlyAlertOnce(true)
-            .setOngoing(true)
+            .setOngoing(playbackState?.state == PlaybackStateCompat.STATE_PLAYING)
+            .addAction(R.drawable.ic_previous, "Previous", previousPendingIntent)
+            .addAction(playPauseIcon, "Play/Pause", playPendingIntent)
+            .addAction(R.drawable.ic_next, "Next", nextPendingIntent)
+            .setStyle(
+                androidx.media.app.NotificationCompat.MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
 
         val intent = packageManager.getLaunchIntentForPackage(packageName)
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE)
-        builder.setContentIntent(pendingIntent)
+        val contentPendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE)
+        builder.setContentIntent(contentPendingIntent)
+
         return builder.build()
     }
 
@@ -541,6 +586,15 @@ class RadioPlayerService : Service() {
         } catch (exception: Exception) {
             Log.e(tag, "Error fetching redirected URL: ${exception.message}")
             return url
+        }
+    }
+
+    private fun handleNotificationAction(action: String) {
+        when (action) {
+            "ACTION_PLAY" -> pausePlayRadio()
+            "ACTION_PAUSE" -> pausePlayRadio()
+            "ACTION_NEXT" -> playNextRadio()
+            "ACTION_PREVIOUS" -> playPreviousRadio()
         }
     }
 }

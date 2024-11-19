@@ -68,6 +68,8 @@
             android:enabled="true"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback" />
+
+        <receiver android:name=".service.NotificationActionReceiver" />
     </application>
 
 </manifest>
