@@ -17,7 +17,6 @@ import android.media.session.PlaybackState
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
@@ -77,6 +76,7 @@ class RadioPlayerService : Service() {
     private var currentRadioId = ""
     private var previousRadioId = ""
     private var nextRandomRadioId = ""
+
     private val ignoreInterval: Long = 500
     private var lastEventTime: Long = 0
 
@@ -143,6 +143,7 @@ class RadioPlayerService : Service() {
         preppedPlayer.release()
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(notificationId)
+        notificationManager.cancelAll()
         super.onDestroy()
     }
 
@@ -470,11 +471,8 @@ class RadioPlayerService : Service() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val controller = mediaSession.controller
-        val playbackState = controller.playbackState
-
         val playIntent = Intent(this, NotificationActionReceiver::class.java).apply {
-            action = if (playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
+            action = if (player.isPlaying) {
                 "ACTION_PAUSE"
             } else {
                 "ACTION_PLAY"
@@ -509,7 +507,7 @@ class RadioPlayerService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOnlyAlertOnce(true)
-            .setOngoing(playbackState?.state == PlaybackStateCompat.STATE_PLAYING)
+            //.setOngoing(player.isPlaying)
             .addAction(R.drawable.ic_previous, "Previous", previousPendingIntent)
             .addAction(playPauseIcon, "Play/Pause", playPendingIntent)
             .addAction(R.drawable.ic_next, "Next", nextPendingIntent)
