@@ -141,6 +141,8 @@ class RadioPlayerService : Service() {
         audioManager.abandonAudioFocusRequest(focusRequest)
         preppedPlayer.stop()
         preppedPlayer.release()
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(notificationId)
         super.onDestroy()
     }
 
@@ -496,7 +498,7 @@ class RadioPlayerService : Service() {
             this, 2, previousIntent, PendingIntent.FLAG_MUTABLE
         )
 
-        val playPauseIcon = if (playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
+        val playPauseIcon = if (player.isPlaying) {
             R.drawable.ic_play_symbol
         } else {
             R.drawable.ic_pause
