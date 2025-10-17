@@ -11,19 +11,19 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.MediaMetadata
-import android.media.session.MediaSession
-import android.media.session.PlaybackState
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.KeyEvent
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.media.session.MediaButtonReceiver
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -64,7 +64,7 @@ class RadioPlayerService : Service() {
 
     private lateinit var player: Player
     private lateinit var preppedPlayer: Player
-    private lateinit var mediaSession: MediaSession
+    private lateinit var mediaSession: MediaSessionCompat
 
     private lateinit var audioManager: AudioManager
     private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
@@ -76,8 +76,6 @@ class RadioPlayerService : Service() {
     private var currentRadioId = ""
     private var previousRadioId = ""
     private var nextRandomRadioId = ""
-    private val ignoreInterval: Long = 500
-    private var lastEventTime: Long = 0
 
     private lateinit var context: Context
     private val callbacks = mutableListOf<RadioPlayerCallback>()
@@ -119,12 +117,13 @@ class RadioPlayerService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder {
-        startForeground(notificationId, createNotification())
         return binder
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(notificationId, createNotification())
+        if (intent != null) {
+            MediaButtonReceiver.handleIntent(mediaSession, intent)
+        }
         return START_STICKY
     }
 
@@ -158,8 +157,20 @@ class RadioPlayerService : Service() {
     }
 
     private fun initializePlayer() {
-        player = ExoPlayer.Builder(context).build()
-        preppedPlayer = ExoPlayer.Builder(context).build()
+        val playerListener = object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                updatePlaybackState()
+                updateNotification()
+            }
+        }
+
+        player = ExoPlayer.Builder(context).build().apply {
+            addListener(playerListener)
+        }
+        preppedPlayer = ExoPlayer.Builder(context).build().apply {
+            addListener(playerListener)
+        }
+
         currentRadioId = CacheManager.getCurrentRadio(context)
         if (currentRadioId.isEmpty()) {
             if (radioIds.value?.isNotEmpty() == true) {
@@ -186,64 +197,41 @@ class RadioPlayerService : Service() {
     }
 
     private fun initializeMediaSession() {
-        mediaSession = MediaSession(context, "WorldRadioMediaSession")
+        mediaSession = MediaSessionCompat(context, "WorldRadioMediaSession")
 
-        mediaSession.setCallback(object : MediaSession.Callback() {
-            override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
-                val currentTime = System.currentTimeMillis()
-                if (currentTime - lastEventTime < ignoreInterval) {
-                    return false
-                }
-                lastEventTime = currentTime
+        mediaSession.setCallback(object : MediaSessionCompat.Callback() {
+            override fun onPlay() {
+                player.play()
+            }
 
-                handleMediaEvent(mediaButtonIntent)
-                return super.onMediaButtonEvent(mediaButtonIntent)
+            override fun onPause() {
+                player.pause()
+            }
+
+            override fun onSkipToNext() {
+                playNextRadio()
+            }
+
+            override fun onSkipToPrevious() {
+                playPreviousRadio()
             }
         })
 
-        val playbackState = PlaybackState.Builder()
-            .setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE)
-            .setState(PlaybackState.STATE_PAUSED, 0, 0f)
-            .build()
-        mediaSession.setPlaybackState(playbackState)
         mediaSession.isActive = true
     }
 
-
-    private fun handleMediaEvent(mediaButtonIntent: Intent) {
-        Log.d(tag, "onMediaButtonEvent triggered")
-        val intentAction = mediaButtonIntent.action
-        if (Intent.ACTION_MEDIA_BUTTON == intentAction) {
-            val event =
-                mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-            if (event != null && event.action == KeyEvent.ACTION_DOWN) {
-                when (event.keyCode) {
-                    KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                        playNextRadio()
-                    }
-
-                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                        playPreviousRadio()
-                    }
-
-                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
-                    KeyEvent.KEYCODE_MEDIA_PLAY,
-                    KeyEvent.KEYCODE_MEDIA_PAUSE,
-                    -> {
-                        if (player.isPlaying) {
-                            player.pause()
-                        } else {
-                            player.play()
-                        }
-                    }
-
-                    else -> {
-                        Log.i(tag, "No handler configured for key event: " + event.keyCode)
-                    }
-                }
-            }
-        }
+    private fun updatePlaybackState() {
+        val state = if (player.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+        val playbackStateBuilder = PlaybackStateCompat.Builder()
+            .setActions(
+                PlaybackStateCompat.ACTION_PLAY_PAUSE or
+                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+            )
+            .setState(state, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1.0f)
+        mediaSession.setPlaybackState(playbackStateBuilder.build())
     }
+
 
     private fun changeRadio(id: String) {
         player.stop()
@@ -339,15 +327,17 @@ class RadioPlayerService : Service() {
     fun updateRadioName(radioDetailsResponse: RadioDetailsResponse) {
         val place = radioDetailsResponse.data.country.title + ", " +
                 radioDetailsResponse.data.place.title
-        val updateText = radioDetailsResponse.data.title + "\n" + place
+        val updateText = radioDetailsResponse.data.title + "" + place
         for (callback in callbacks) {
             callback.onRadioChange(updateText)
         }
 
-        val metadataBuilder = MediaMetadata.Builder()
-        metadataBuilder.putString(MediaMetadata.METADATA_KEY_TITLE, radioDetailsResponse.data.title)
-        metadataBuilder.putString(MediaMetadata.METADATA_KEY_ARTIST, place)
+        val metadataBuilder = MediaMetadataCompat.Builder()
+        metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, radioDetailsResponse.data.title)
+        metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, place)
         mediaSession.setMetadata(metadataBuilder.build())
+        updatePlaybackState()
+        updateNotification()
     }
 
     private fun getAudioFocus() {
@@ -463,10 +453,23 @@ class RadioPlayerService : Service() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        val metadata = mediaSession.controller.metadata
+
+        val playPauseIcon = if (player.isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+
         val builder = NotificationCompat.Builder(this, "channel_id")
-            .setContentTitle("Radio Service")
-            .setContentText("Radio is playing :)")
+            .setContentTitle(metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE) ?: "Radio Service")
+            .setContentText(metadata?.getString(MediaMetadataCompat.METADATA_KEY_ARTIST) ?: "Radio is playing :)")
             .setSmallIcon(R.drawable.ic_play)
+            .addAction(android.R.drawable.ic_media_previous, "Previous",
+                MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS))
+            .addAction(playPauseIcon, "Play/Pause",
+                MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_PLAY_PAUSE))
+            .addAction(android.R.drawable.ic_media_next, "Next",
+                MediaButtonReceiver.buildMediaButtonPendingIntent(this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
+            .setStyle(androidx.media.app.NotificationCompat.MediaStyle()
+                .setMediaSession(mediaSession.sessionToken)
+                .setShowActionsInCompactView(0, 1, 2))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOnlyAlertOnce(true)
@@ -475,7 +478,14 @@ class RadioPlayerService : Service() {
         val intent = packageManager.getLaunchIntentForPackage(packageName)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE)
         builder.setContentIntent(pendingIntent)
+
+        startForeground(notificationId, builder.build())
         return builder.build()
+    }
+
+    private fun updateNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(notificationId, createNotification())
     }
 
     fun getRadioIds(): LiveData<List<String>> {
