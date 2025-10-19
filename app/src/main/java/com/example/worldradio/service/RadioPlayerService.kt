@@ -6,8 +6,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.bluetooth.BluetoothDevice
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -82,6 +85,14 @@ class RadioPlayerService : Service() {
     private val notificationId = 555
     private val binder = LocalBinder()
 
+    private val bluetoothReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == BluetoothDevice.ACTION_ACL_DISCONNECTED) {
+                player.pause()
+            }
+        }
+    }
+
     inner class LocalBinder : Binder() {
         fun getService(): RadioPlayerService = this@RadioPlayerService
     }
@@ -114,6 +125,9 @@ class RadioPlayerService : Service() {
             radioIds.value = loadedRadioIds
             getAudioFocus()
         }
+
+        val filter = IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+        registerReceiver(bluetoothReceiver, filter)
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -138,6 +152,7 @@ class RadioPlayerService : Service() {
         audioManager.abandonAudioFocusRequest(focusRequest)
         preppedPlayer.stop()
         preppedPlayer.release()
+        unregisterReceiver(bluetoothReceiver)
         super.onDestroy()
     }
 
@@ -327,7 +342,7 @@ class RadioPlayerService : Service() {
     fun updateRadioName(radioDetailsResponse: RadioDetailsResponse) {
         val place = radioDetailsResponse.data.country.title + ", " +
                 radioDetailsResponse.data.place.title
-        val updateText = radioDetailsResponse.data.title + "" + place
+        val updateText = radioDetailsResponse.data.title + "\n" + place
         for (callback in callbacks) {
             callback.onRadioChange(updateText)
         }
